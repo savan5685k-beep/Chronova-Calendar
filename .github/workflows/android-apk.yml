@@ -14,29 +14,84 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
+
       - name: Install dependencies
         run: npm install
+
       - name: Add Android platform
         run: npx cap add android
+
       - name: Sync web assets
         run: npx cap sync android
+
       - name: Build debug APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
-      - name: Upload APK
+
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: Chronova-debug-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Configure release signing and build production APK
+        env:
+          CHRONOVA_KEYSTORE_BASE64: ${{ secrets.CHRONOVA_KEYSTORE_BASE64 }}
+          CHRONOVA_STORE_PASSWORD: ${{ secrets.CHRONOVA_STORE_PASSWORD }}
+          CHRONOVA_KEY_ALIAS: ${{ secrets.CHRONOVA_KEY_ALIAS }}
+          CHRONOVA_KEY_PASSWORD: ${{ secrets.CHRONOVA_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CHRONOVA_KEYSTORE_BASE64:-}" ] || [ -z "${CHRONOVA_STORE_PASSWORD:-}" ] || [ -z "${CHRONOVA_KEY_ALIAS:-}" ] || [ -z "${CHRONOVA_KEY_PASSWORD:-}" ]; then
+            echo "Production signing is not configured. Add the four CHRONOVA_* Actions secrets to enable a signed release APK." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "$CHRONOVA_KEYSTORE_BASE64" | base64 --decode > android/app/chronova-release.keystore
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("android/app/build.gradle")
+          s = p.read_text()
+          signing = """
+              signingConfigs {
+                  release {
+                      storeFile file("chronova-release.keystore")
+                      storePassword System.getenv("CHRONOVA_STORE_PASSWORD")
+                      keyAlias System.getenv("CHRONOVA_KEY_ALIAS")
+                      keyPassword System.getenv("CHRONOVA_KEY_PASSWORD")
+                  }
+              }
+          """
+          if "signingConfigs {" not in s:
+              s = s.replace("    buildTypes {", signing + "\n    buildTypes {", 1)
+          marker = "        release {"
+          if marker not in s:
+              raise SystemExit("Could not find release buildType in app/build.gradle")
+          start = s.index(marker) + len(marker)
+          if "signingConfig signingConfigs.release" not in s:
+              s = s[:start] + "\n            signingConfig signingConfigs.release" + s[start:]
+          p.write_text(s)
+          PY
+          cd android
+          ./gradlew assembleRelease
+
+      - name: Upload signed production APK
+        if: ${{ hashFiles('android/app/build/outputs/apk/release/app-release.apk') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Chronova-production-release-APK
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error

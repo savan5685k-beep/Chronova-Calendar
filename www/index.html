@@ -1,2 +1,3865 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Chronova — Smart Calendar</title></head><body><h1>Chronova Smart Calendar</h1><p>Source bundle will be committed in the next update.</p></body></html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" id="metaThemeColor" content="#6750e8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Chronova — Smart Calendar</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f3f4f9;
+  --bg-glow: rgba(103, 80, 232, 0.07);
+  --panel: #ffffff;
+  --panel2: #f0eff8;
+  --panel-hover: #e8e5f6;
+  --text: #151423;
+  --text-soft: #4a4863;
+  --muted: #7b7892;
+  --line: #e7e5f2;
+  --primary: #6750e8;
+  --primary2: #8c78ff;
+  --primary-soft: rgba(103, 80, 232, 0.12);
+  --primary-glow: rgba(103, 80, 232, 0.3);
+  --shadow-xs: 0 2px 8px rgba(20, 18, 48, 0.04);
+  --shadow-sm: 0 6px 18px rgba(20, 18, 48, 0.06);
+  --shadow: 0 12px 32px rgba(20, 18, 48, 0.09);
+  --shadow-lg: 0 24px 64px rgba(15, 13, 38, 0.22);
+
+  /* Holidays & Semantics */
+  --holiday: #e11d48;
+  --holiday-bg: rgba(225, 29, 72, 0.11);
+  --festival: #d97706;
+  --festival-bg: rgba(217, 119, 6, 0.13);
+  --observance: #0d9488;
+  --observance-bg: rgba(13, 148, 136, 0.12);
+  --sunday: #dc2626;
+  --bday: #db2777;
+  --bday-bg: rgba(219, 39, 119, 0.12);
+
+  /* Categories */
+  --purple: #7c5cff;
+  --blue: #2563eb;
+  --green: #10b981;
+  --orange: #f59e0b;
+  --pink: #ec4899;
+  --danger: #e11d48;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+body.dark {
+  color-scheme: dark;
+  --bg: #0b0c13;
+  --bg-glow: rgba(124, 92, 255, 0.11);
+  --panel: #141521;
+  --panel2: #1d1f30;
+  --panel-hover: #26293e;
+  --text: #f4f3ff;
+  --text-soft: #cac7e0;
+  --muted: #8b88a6;
+  --line: #26283b;
+  --shadow-xs: 0 2px 10px rgba(0, 0, 0, 0.24);
+  --shadow-sm: 0 6px 18px rgba(0, 0, 0, 0.32);
+  --shadow: 0 14px 36px rgba(0, 0, 0, 0.44);
+  --shadow-lg: 0 28px 70px rgba(0, 0, 0, 0.68);
+
+  --holiday: #fb7185;
+  --holiday-bg: rgba(244, 63, 94, 0.18);
+  --festival: #fbbf24;
+  --festival-bg: rgba(245, 158, 11, 0.18);
+  --observance: #2dd4bf;
+  --observance-bg: rgba(20, 184, 166, 0.18);
+  --sunday: #f87171;
+  --bday: #f472b6;
+  --bday-bg: rgba(244, 114, 182, 0.18);
+}
+
+/* Circular Radial Wipe for View Transitions API (Silky Dark <-> Light) */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 9999; }
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--bg);
+  background-image: radial-gradient(circle at 15% -12%, var(--bg-glow), transparent 46%),
+                    radial-gradient(circle at 90% 112%, var(--bg-glow), transparent 44%);
+  color: var(--text);
+  font: 13.5px/1.45 "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  user-select: none;
+}
+
+body.theme-fallback-anim,
+body.theme-fallback-anim .card,
+body.theme-fallback-anim .sidebar,
+body.theme-fallback-anim .mobile-nav {
+  transition: background-color 0.42s var(--ease), color 0.35s var(--ease), border-color 0.35s var(--ease);
+}
+
+input, textarea, select { user-select: text; }
+button, input, select, textarea { font: inherit; color: inherit; }
+
+button {
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  transition: transform 0.16s var(--spring), background-color 0.2s var(--ease), color 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+
+button:active { transform: scale(0.95); }
+svg { display: block; flex-shrink: 0; }
+
+/* Smooth hidden scrollbars inside internal panels */
+.scroll-area {
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll-area::-webkit-scrollbar { display: none; }
+
+/* ==================== NATIVE DAY/NIGHT THEME SWITCH ==================== */
+.theme-pill-switch {
+  position: relative;
+  width: 56px;
+  height: 30px;
+  border-radius: 999px;
+  padding: 3px;
+  background: linear-gradient(135deg, #dbeafe, #fef3c7);
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--line));
+  box-shadow: inset 0 2px 5px rgba(15, 23, 42, 0.08);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: background 0.45s var(--ease), border-color 0.35s var(--ease), box-shadow 0.35s var(--ease);
+}
+
+body.dark .theme-pill-switch {
+  background: linear-gradient(135deg, #171a33, #2b2459);
+  border-color: rgba(167, 139, 250, 0.32);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+.theme-pill-switch .sky-stars {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%) scale(0.5);
+  opacity: 0;
+  color: #e9d5ff;
+  transition: opacity 0.35s var(--ease), transform 0.45s var(--spring);
+  pointer-events: none;
+}
+
+body.dark .theme-pill-switch .sky-stars {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
+
+.theme-pill-switch .sky-clouds {
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  transform: translateY(-50%) scale(1);
+  opacity: 0.9;
+  color: #ffffff;
+  transition: opacity 0.3s var(--ease), transform 0.4s var(--ease);
+  pointer-events: none;
+}
+
+body.dark .theme-pill-switch .sky-clouds {
+  opacity: 0;
+  transform: translateY(-50%) translateX(6px) scale(0.5);
+}
+
+.theme-pill-knob {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.48);
+  transform: translateX(0) rotate(0deg);
+  transition: transform 0.48s var(--spring), background 0.4s var(--ease), box-shadow 0.4s var(--ease);
+  position: relative;
+  z-index: 2;
+}
+
+body.dark .theme-pill-knob {
+  transform: translateX(26px) rotate(360deg);
+  background: linear-gradient(135deg, #c4b5fd, #7c5cff);
+  box-shadow: 0 2px 10px rgba(124, 92, 255, 0.65);
+}
+
+.theme-pill-knob .ico-sun,
+.theme-pill-knob .ico-moon {
+  position: absolute;
+  transition: opacity 0.25s var(--ease), transform 0.4s var(--spring);
+}
+
+.theme-pill-knob .ico-sun { opacity: 1; transform: scale(1); }
+.theme-pill-knob .ico-moon { opacity: 0; transform: scale(0.4); }
+body.dark .theme-pill-knob .ico-sun { opacity: 0; transform: scale(0.4); }
+body.dark .theme-pill-knob .ico-moon { opacity: 1; transform: scale(1); }
+
+/* ==================== NATIVE iOS / HYPEROS TOGGLE SWITCH ==================== */
+.ios-switch {
+  position: relative;
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--line);
+  padding: 3px;
+  flex-shrink: 0;
+  transition: background-color 0.28s var(--ease);
+}
+
+.ios-switch::after {
+  content: "";
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  transform: translateX(0);
+  transition: transform 0.32s var(--spring), width 0.18s var(--ease);
+}
+
+.ios-switch.on {
+  background: var(--primary);
+}
+
+.ios-switch.on::after {
+  transform: translateX(20px);
+}
+
+/* ==================== APP SHELL ==================== */
+.app {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  height: 100%;
+  width: 100%;
+  max-width: 1720px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+/* ==================== SIDEBAR ==================== */
+.sidebar {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  height: 100%;
+  overflow: hidden;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 2px 6px;
+  flex-shrink: 0;
+}
+
+.logo {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--primary2), var(--primary));
+  display: grid;
+  place-items: center;
+  color: #fff;
+  box-shadow: 0 7px 18px var(--primary-glow);
+  transition: transform 0.35s var(--spring);
+}
+
+.brand:hover .logo { transform: rotate(-8deg) scale(1.06); }
+.brand strong { font-size: 18px; font-weight: 800; letter-spacing: -0.6px; display: block; line-height: 1.1; }
+.brand small { display: block; color: var(--muted); font-size: 9.5px; font-weight: 700; letter-spacing: 1.3px; text-transform: uppercase; margin-top: 2px; }
+
+.nav-section { flex-shrink: 0; }
+.nav-label { font-size: 9.5px; color: var(--muted); font-weight: 800; letter-spacing: 1.3px; padding: 0 10px; margin-bottom: 5px; text-transform: uppercase; }
+.nav { display: grid; gap: 3px; }
+
+.nav button {
+  color: var(--muted);
+  text-align: left;
+  padding: 9px 11px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 13px;
+  position: relative;
+}
+
+.nav button .ico { width: 19px; height: 19px; display: grid; place-items: center; }
+.nav button .badge {
+  margin-left: auto;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 1.5px 7px;
+  border-radius: 20px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.nav button:hover { background: var(--panel2); color: var(--text); }
+.nav button.active { background: var(--primary-soft); color: var(--primary); }
+.nav button.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3.5px;
+  border-radius: 0 4px 4px 0;
+  background: var(--primary);
+  animation: scaleYIn 0.25s var(--spring);
+}
+
+@keyframes scaleYIn { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+
+/* Mini Calendar */
+.mini {
+  background: var(--panel2);
+  padding: 10px;
+  border-radius: 15px;
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.mini-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  font-size: 12px;
+  margin-bottom: 6px;
+  padding: 0 3px;
+}
+
+.mini-nav { display: flex; gap: 2px; }
+.mini-head button { width: 24px; height: 24px; border-radius: 7px; color: var(--muted); display: grid; place-items: center; }
+.mini-head button:hover { background: var(--panel); color: var(--text); }
+
+.mini-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.mini-grid span { font-size: 9.5px; font-weight: 800; color: var(--muted); padding: 3px 0; }
+.mini-grid span.sun-h { color: var(--sunday); }
+
+.mini-grid button {
+  color: var(--text);
+  border-radius: 7px;
+  height: 23px;
+  font-size: 10.5px;
+  font-weight: 600;
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.mini-grid button:hover { background: var(--panel); }
+.mini-grid button.outside { opacity: 0.3; }
+.mini-grid button.sun:not(.today) { color: var(--sunday); }
+.mini-grid button.has-hol::after { content: ""; position: absolute; bottom: 2px; width: 4px; height: 4px; border-radius: 50%; background: var(--holiday); }
+.mini-grid button.has-ev:not(.has-hol)::after { content: ""; position: absolute; bottom: 2px; width: 4px; height: 4px; border-radius: 50%; background: var(--primary); }
+.mini-grid button.today { background: var(--primary); color: #fff; box-shadow: 0 3px 9px var(--primary-glow); }
+.mini-grid button.today::after { background: #fff !important; }
+.mini-grid button.selected:not(.today) { background: var(--panel); box-shadow: inset 0 0 0 1.5px var(--primary); color: var(--primary); }
+
+/* Sidebar Bottom Holiday Card */
+.side-bottom { margin-top: auto; flex-shrink: 0; }
+
+.next-holiday-box {
+  background: linear-gradient(135deg, var(--primary), var(--primary2));
+  border-radius: 15px;
+  padding: 12px 14px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 24px var(--primary-glow);
+  cursor: pointer;
+}
+
+.next-holiday-box:hover { transform: translateY(-2px); }
+.next-holiday-box::after { content: ""; position: absolute; right: -18px; top: -18px; width: 74px; height: 74px; border-radius: 50%; background: rgba(255, 255, 255, 0.14); }
+.nh-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.9px; background: rgba(255, 255, 255, 0.2); padding: 2px 8px; border-radius: 20px; margin-bottom: 6px; }
+.next-holiday-box b { display: block; font-size: 13.5px; line-height: 1.25; margin-bottom: 2px; }
+.next-holiday-box small { display: block; font-size: 11px; opacity: 0.92; }
+
+/* ==================== MAIN WORKSPACE ==================== */
+main {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 20px 14px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Topbar */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+  min-height: 44px;
+}
+
+.top-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+
+.mobile-brand-logo {
+  display: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--primary2), var(--primary));
+  place-items: center;
+  color: #fff;
+  box-shadow: 0 5px 14px var(--primary-glow);
+  flex-shrink: 0;
+}
+
+.welcome { min-width: 0; }
+.welcome h1 { font-size: 19px; font-weight: 800; letter-spacing: -0.5px; margin: 0; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.ticker-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.live-dot {
+  width: 6.5px;
+  height: 6.5px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  flex-shrink: 0;
+}
+
+.actions { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text-soft);
+  box-shadow: var(--shadow-xs);
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+.icon-btn:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-1px); }
+
+.icon-btn .notif-dot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--danger);
+  border: 2px solid var(--panel);
+  display: none;
+}
+
+.icon-btn .notif-dot.show { display: block; }
+
+.palette-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary2), var(--primary));
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+/* Buttons */
+.primary-btn {
+  background: linear-gradient(135deg, var(--primary), var(--primary2));
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 11px;
+  font-weight: 700;
+  font-size: 12.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 6px 16px var(--primary-glow);
+}
+
+.primary-btn:hover { transform: translateY(-1.5px); box-shadow: 0 9px 22px var(--primary-glow); }
+
+.secondary-btn {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 7px 11px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: var(--shadow-xs);
+}
+
+.secondary-btn:hover { border-color: var(--primary); color: var(--primary); }
+.secondary-btn.active-toggle { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
+
+.danger-btn {
+  background: rgba(225, 29, 72, 0.12);
+  color: var(--danger);
+  padding: 8px 13px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 12.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.danger-btn:hover { background: var(--danger); color: #fff; }
+
+/* ==================== PAGE CONTAINER ==================== */
+.page-container { flex: 1; min-height: 0; position: relative; overflow: hidden; }
+
+.page-view {
+  display: none;
+  height: 100%;
+  flex-direction: column;
+  gap: 11px;
+  animation: pageIn 0.28s var(--ease);
+}
+
+.page-view.active { display: flex; }
+
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==================== TOOLBAR ==================== */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.month-title { display: flex; align-items: center; gap: 9px; }
+.month-title h2 { font-size: 19px; font-weight: 800; margin: 0; letter-spacing: -0.45px; min-width: 152px; cursor: pointer; }
+.month-title h2:hover { color: var(--primary); }
+
+.arrows { display: flex; gap: 4px; }
+.arrows button {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text);
+  width: 31px;
+  height: 31px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow-xs);
+}
+.arrows button:hover { border-color: var(--primary); color: var(--primary); }
+
+.segmented {
+  display: flex;
+  background: var(--panel2);
+  padding: 3px;
+  border-radius: 11px;
+  gap: 2px;
+  border: 1px solid var(--line);
+}
+
+.segmented button { color: var(--muted); padding: 5px 11px; border-radius: 8px; font-size: 12px; font-weight: 700; }
+.segmented button.active { background: var(--panel); color: var(--primary); box-shadow: var(--shadow-xs); }
+
+/* ==================== CALENDAR WORKSPACE ==================== */
+.workspace-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 326px;
+  gap: 14px;
+  overflow: hidden;
+}
+
+.workspace-grid.extended-mode {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.workspace-grid.extended-mode .right-panel {
+  display: none;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.calendar-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 13px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* Month View */
+#monthView { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+.weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.weekdays.has-wk {
+  grid-template-columns: 28px repeat(7, minmax(0, 1fr));
+}
+
+.weekdays div {
+  text-align: center;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  padding: 4px 0;
+}
+
+.weekdays div.sun-col { color: var(--sunday); }
+
+.calendar-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-rows: repeat(6, minmax(0, 1fr));
+  gap: 5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.calendar-grid.has-wk {
+  grid-template-columns: 28px repeat(7, minmax(0, 1fr));
+}
+
+.wk-num-cell {
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--muted);
+  background: var(--panel2);
+  border-radius: 8px;
+  opacity: 0.85;
+}
+
+.calendar-grid.slide-next { animation: slideNext 0.28s var(--ease); }
+.calendar-grid.slide-prev { animation: slidePrev 0.28s var(--ease); }
+@keyframes slideNext { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slidePrev { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+
+.day {
+  border: 1.5px solid var(--line);
+  border-color: color-mix(in srgb, var(--line) 65%, transparent);
+  border-radius: 12px;
+  padding: 5px 6px 4px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+  background: transparent;
+  transition: transform 0.16s var(--spring), background-color 0.16s var(--ease), border-color 0.16s var(--ease);
+}
+
+.day:hover { background: var(--panel2); border-color: var(--line); transform: translateY(-1px); }
+.day.outside { opacity: 0.32; background: color-mix(in srgb, var(--panel2) 35%, transparent); }
+.day.sunday:not(.outside) { background: color-mix(in srgb, var(--holiday-bg) 25%, transparent); }
+.day.selected { background: var(--primary-soft) !important; border-color: var(--primary) !important; box-shadow: inset 0 0 0 1px var(--primary); }
+
+.day-num {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  margin-bottom: 1px;
+}
+
+.day-num-val {
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.day-sub-cal {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 68px;
+}
+
+.day.sunday .day-num-val,
+.day.is-holiday .day-num-val { color: var(--sunday); }
+
+.day.today .day-num-val {
+  background: var(--primary);
+  color: #fff !important;
+  box-shadow: 0 3px 10px var(--primary-glow);
+}
+
+.day-dots-mobile {
+  display: none;
+  gap: 3px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.day-dot-m { width: 5px; height: 5px; border-radius: 50%; }
+
+.day-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.event-chip {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 5.5px;
+  border-radius: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-left: 2.5px solid var(--purple);
+  background: rgba(124, 92, 255, 0.13);
+  color: #553ad1;
+  line-height: 1.3;
+  flex-shrink: 0;
+}
+
+.event-chip.green { background: rgba(16, 185, 129, 0.13); color: #047857; border-color: var(--green); }
+.event-chip.orange { background: rgba(245, 158, 11, 0.15); color: #b45309; border-color: var(--orange); }
+.event-chip.pink { background: rgba(236, 72, 153, 0.13); color: #be185d; border-color: var(--pink); }
+.event-chip.blue { background: rgba(37, 99, 235, 0.13); color: #1d4ed8; border-color: var(--blue); }
+.event-chip.bday { background: var(--bday-bg); color: var(--bday); border-color: var(--bday); }
+
+.event-chip.hol-holiday { background: var(--holiday-bg); color: var(--holiday); border-color: var(--holiday); }
+.event-chip.hol-festival { background: var(--festival-bg); color: var(--festival); border-color: var(--festival); }
+.event-chip.hol-observance { background: var(--observance-bg); color: var(--observance); border-color: var(--observance); }
+
+body.dark .event-chip { background: rgba(124, 92, 255, 0.24); color: #d6cbff; }
+body.dark .event-chip.green { background: rgba(16, 185, 129, 0.22); color: #6ee7b7; }
+body.dark .event-chip.orange { background: rgba(245, 158, 11, 0.22); color: #fcd34d; }
+body.dark .event-chip.pink { background: rgba(236, 72, 153, 0.22); color: #f9a8d4; }
+body.dark .event-chip.blue { background: rgba(37, 99, 235, 0.24); color: #93c5fd; }
+body.dark .event-chip.bday { background: var(--bday-bg); color: var(--bday); }
+body.dark .event-chip.hol-holiday { background: var(--holiday-bg); color: var(--holiday); }
+body.dark .event-chip.hol-festival { background: var(--festival-bg); color: var(--festival); }
+body.dark .event-chip.hol-observance { background: var(--observance-bg); color: var(--observance); }
+
+.more-tag { font-size: 9px; font-weight: 800; color: var(--muted); padding-left: 4px; }
+
+/* Week & Day Views */
+.week-view, .day-view {
+  display: none;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  animation: pageIn 0.24s var(--ease);
+}
+
+.week-head-row {
+  display: grid;
+  grid-template-columns: 56px repeat(7, minmax(0, 1fr));
+  gap: 5px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.week-day {
+  background: var(--panel2);
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  padding: 5px 3px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.week-day small { font-size: 9.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; display: block; }
+.week-day b { font-size: 14px; display: block; }
+.week-day.current { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
+
+.week-body { flex: 1; min-height: 0; position: relative; }
+.week-row { display: grid; grid-template-columns: 56px repeat(7, minmax(0, 1fr)); gap: 5px; min-height: 48px; border-bottom: 1px solid var(--line); }
+.week-time { font-size: 10px; font-weight: 700; color: var(--muted); padding-top: 5px; font-variant-numeric: tabular-nums; }
+.week-cell { border-left: 1px solid var(--line); padding: 3px; cursor: pointer; border-radius: 5px; }
+.week-cell:hover { background: var(--panel2); }
+
+.day-head { display: flex; justify-content: space-between; align-items: center; padding-bottom: 9px; border-bottom: 1px solid var(--line); flex-shrink: 0; }
+.day-head h3 { margin: 0; font-size: 15.5px; font-weight: 800; }
+
+.time-row { display: grid; grid-template-columns: 62px 1fr; min-height: 52px; border-bottom: 1px solid var(--line); position: relative; }
+.time-row > span { font-size: 10.5px; font-weight: 700; color: var(--muted); padding-top: 7px; font-variant-numeric: tabular-nums; }
+.time-slot { border-left: 1px solid var(--line); padding: 5px 8px; cursor: pointer; position: relative; }
+.time-slot:hover { background: var(--panel2); }
+
+.now-line {
+  position: absolute;
+  left: -4px;
+  right: 0;
+  height: 2px;
+  background: var(--danger);
+  pointer-events: none;
+  z-index: 4;
+}
+.now-line::before {
+  content: "";
+  position: absolute;
+  left: -3px;
+  top: -3.5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--danger);
+}
+
+/* ==================== RIGHT INSPECTOR PANEL ==================== */
+.right-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.day-summary-card { padding: 13px 15px; flex-shrink: 0; }
+.day-summary-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.day-summary-top h3 { margin: 0; font-size: 15px; font-weight: 800; letter-spacing: -0.3px; }
+.day-summary-top small { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+.mini-ring-wrap { position: relative; width: 42px; height: 42px; flex-shrink: 0; }
+.mini-ring-wrap svg { transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: var(--panel2); stroke-width: 5.5; }
+.ring-fg { fill: none; stroke: var(--primary); stroke-width: 5.5; stroke-linecap: round; transition: stroke-dashoffset 0.65s var(--ease); }
+.mini-ring-pct { position: absolute; inset: 0; display: grid; place-items: center; font-size: 10px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+.day-almanac-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 4px 9px;
+  border-radius: 8px;
+  background: var(--panel2);
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.day-holiday-banners { display: grid; gap: 6px; margin-top: 9px; }
+
+.hol-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: 11px;
+  background: var(--holiday-bg);
+  border: 1px solid color-mix(in srgb, var(--holiday) 24%, transparent);
+}
+.hol-banner.festival { background: var(--festival-bg); border-color: color-mix(in srgb, var(--festival) 25%, transparent); }
+.hol-banner.observance { background: var(--observance-bg); border-color: color-mix(in srgb, var(--observance) 25%, transparent); }
+.hol-banner.bday { background: var(--bday-bg); border-color: color-mix(in srgb, var(--bday) 25%, transparent); }
+
+.hol-banner-ico { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--panel); color: var(--holiday); flex-shrink: 0; }
+.hol-banner.festival .hol-banner-ico { color: var(--festival); }
+.hol-banner.observance .hol-banner-ico { color: var(--observance); }
+.hol-banner.bday .hol-banner-ico { color: var(--bday); }
+
+.hol-banner b { font-size: 12px; display: block; line-height: 1.25; }
+.hol-banner small { font-size: 10.5px; color: var(--text-soft); display: block; margin-top: 1px; }
+
+.inspector-card { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 13px 14px; overflow: hidden; }
+.inspector-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; flex-shrink: 0; }
+.inspector-body { flex: 1; min-height: 0; }
+
+.link-btn {
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 11.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 9px;
+  border-radius: 8px;
+  background: var(--primary-soft);
+}
+.link-btn:hover { background: var(--primary); color: #fff; }
+
+.agenda-item {
+  display: grid;
+  grid-template-columns: 50px 3.5px 1fr;
+  gap: 9px;
+  padding: 9px 7px;
+  border-bottom: 1px solid var(--line);
+  border-radius: 10px;
+  animation: staggerIn 0.25s var(--ease) both;
+}
+.agenda-item:hover { background: var(--panel2); }
+.agenda-item:last-child { border-bottom: 0; }
+@keyframes staggerIn { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+
+.agenda-time { font-size: 10.5px; font-weight: 700; color: var(--muted); padding-top: 2px; font-variant-numeric: tabular-nums; }
+.agenda-bar { border-radius: 5px; background: var(--primary); }
+.agenda-info b { font-size: 12.5px; display: block; }
+.agenda-info small { font-size: 10.5px; color: var(--muted); display: block; margin-top: 1px; }
+.agenda-actions { display: flex; gap: 10px; margin-top: 4px; }
+.agenda-actions button { font-size: 11px; font-weight: 700; padding: 0; }
+
+/* Task Rows */
+.task-row { display: flex; align-items: center; gap: 10px; padding: 9px 7px; border-bottom: 1px solid var(--line); border-radius: 10px; }
+.task-row:hover { background: var(--panel2); }
+.task-row:last-child { border-bottom: 0; }
+
+.check-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 7px;
+  border: 2px solid var(--line);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  flex-shrink: 0;
+  transition: background-color 0.2s var(--ease), border-color 0.2s var(--ease), transform 0.25s var(--spring);
+}
+.check-btn:hover { border-color: var(--primary); }
+.task-row.done .check-btn { background: var(--primary); border-color: var(--primary); transform: scale(1.06); }
+.task-row .check-btn svg { opacity: 0; transform: scale(0.4); transition: 0.22s var(--spring); }
+.task-row.done .check-btn svg { opacity: 1; transform: scale(1); }
+
+.task-text { flex: 1; min-width: 0; cursor: pointer; }
+.task-text span { font-size: 12.5px; font-weight: 600; display: block; }
+.task-text small { font-size: 10.5px; color: var(--muted); }
+.task-row.done .task-text span { text-decoration: line-through; color: var(--muted); }
+
+.prio-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.prio-high { background: var(--danger); }
+.prio-medium { background: var(--orange); }
+.prio-low { background: var(--green); }
+
+.del-icon-btn { width: 26px; height: 26px; border-radius: 7px; color: var(--muted); display: grid; place-items: center; }
+.del-icon-btn:hover { background: rgba(225, 29, 72, 0.12); color: var(--danger); }
+
+.empty { text-align: center; padding: 24px 12px; color: var(--muted); }
+.empty-icon { width: 40px; height: 40px; margin: 0 auto 8px; border-radius: 12px; background: var(--primary-soft); color: var(--primary); display: grid; place-items: center; }
+.empty b { display: block; color: var(--text); font-size: 13px; margin-bottom: 2px; }
+.empty span { font-size: 11.5px; }
+
+/* ==================== HOLIDAYS DIRECTORY ==================== */
+.holidays-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 11px; padding-bottom: 14px; }
+
+.holiday-card {
+  padding: 13px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+.holiday-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+
+.hol-date-badge {
+  width: 46px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--holiday-bg);
+  color: var(--holiday);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.hol-date-badge.festival { background: var(--festival-bg); color: var(--festival); }
+.hol-date-badge.observance { background: var(--observance-bg); color: var(--observance); }
+.hol-date-badge small { font-size: 9px; font-weight: 800; text-transform: uppercase; line-height: 1; }
+.hol-date-badge b { font-size: 17px; font-weight: 800; line-height: 1.15; }
+
+.hol-info { flex: 1; min-width: 0; }
+.hol-info b { display: block; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hol-info small { display: block; color: var(--muted); font-size: 11px; margin-top: 1px; }
+
+.countdown-pill { font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 20px; background: var(--panel2); color: var(--text-soft); flex-shrink: 0; }
+.countdown-pill.soon { background: var(--primary-soft); color: var(--primary); }
+
+/* ==================== INSIGHTS ==================== */
+.stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; flex-shrink: 0; }
+.stat-card { padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+.stat-ico { width: 40px; height: 40px; border-radius: 12px; background: var(--primary-soft); color: var(--primary); display: grid; place-items: center; }
+.stat-card small { display: block; color: var(--muted); font-size: 11px; font-weight: 700; }
+.stat-card strong { font-size: 21px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.charts-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; }
+.chart-card { padding: 17px; }
+.chart-card h3 { margin: 0 0 13px; font-size: 14px; font-weight: 800; }
+.bar-chart { display: grid; grid-template-columns: repeat(7, 1fr); align-items: end; gap: 10px; height: 155px; }
+.bar-col { display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+.bar-track { width: 100%; max-width: 30px; height: 115px; background: var(--panel2); border-radius: 10px; display: flex; align-items: flex-end; overflow: hidden; }
+.bar-fill { width: 100%; background: linear-gradient(180deg, var(--primary2), var(--primary)); border-radius: 10px; transition: height 0.65s var(--ease); }
+.bar-col span { font-size: 11px; font-weight: 700; color: var(--muted); }
+.donut-wrap { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.legend { flex: 1; display: grid; gap: 8px; min-width: 130px; }
+.legend-item { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 600; }
+.legend-left { display: flex; align-items: center; gap: 8px; }
+.legend-dot { width: 9px; height: 9px; border-radius: 50%; }
+
+/* ==================== NATIVE HYPEROS / XIAOMI STYLE SETTINGS ==================== */
+.settings-wrap {
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 24px;
+}
+
+.settings-group-label {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--primary);
+  padding: 2px 12px 0;
+  letter-spacing: 0.3px;
+}
+
+.settings-group {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
+}
+
+.s-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  width: 100%;
+  text-align: left;
+  transition: background-color 0.16s var(--ease);
+}
+
+.s-row:last-child { border-bottom: 0; }
+.s-row.clickable { cursor: pointer; }
+.s-row.clickable:hover { background: var(--panel2); }
+
+.s-row-info { flex: 1; min-width: 0; }
+.s-row-info b { display: block; font-size: 14px; font-weight: 650; color: var(--text); }
+.s-row-info small { display: block; font-size: 11.5px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
+
+.s-row-right {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.s-select {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 12.5px;
+  text-align: right;
+  outline: none;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.s-time-input {
+  border: 1px solid var(--line);
+  background: var(--panel2);
+  color: var(--text);
+  border-radius: 9px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  outline: none;
+}
+
+/* ==================== POPOVERS & 3-DOT OVERFLOW MENU ==================== */
+.popover {
+  position: fixed;
+  top: 58px;
+  right: 18px;
+  width: 274px;
+  max-width: calc(100vw - 24px);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: var(--shadow-lg);
+  z-index: 75;
+  display: none;
+  transform-origin: top right;
+  animation: menuDrop 0.22s var(--spring);
+}
+
+.popover.show { display: block; }
+@keyframes menuDrop {
+  from { opacity: 0; transform: translateY(-6px) scale(0.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.popover h4 { margin: 0 0 10px; font-size: 13px; display: flex; align-items: center; justify-content: space-between; }
+
+/* 3-dot More Menu (Matches Image 2!) */
+.more-menu {
+  width: 220px;
+  padding: 6px;
+  border-radius: 16px;
+}
+
+.more-menu button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 13px;
+  border-radius: 11px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: left;
+}
+
+.more-menu button:hover {
+  background: var(--panel2);
+  color: var(--primary);
+}
+
+.more-menu button svg { color: var(--muted); }
+.more-menu button:hover svg { color: var(--primary); }
+
+.swatch-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px; margin-bottom: 12px; }
+.swatch { height: 32px; border-radius: 10px; display: grid; place-items: center; color: #fff; border: 2px solid transparent; }
+.swatch:hover { transform: translateY(-2px); }
+.swatch.active { border-color: var(--text); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); }
+
+/* ==================== MODALS ==================== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 22, 0.54);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 85;
+  backdrop-filter: blur(8px);
+}
+
+.modal-backdrop.show { display: flex; animation: fadeIn 0.16s var(--ease); }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  width: min(470px, 100%);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: var(--shadow-lg);
+  animation: modalPop 0.26s var(--spring);
+  max-height: 88dvh;
+  overflow-y: auto;
+}
+
+@keyframes modalPop {
+  from { opacity: 0; transform: translateY(16px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.close-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.close-row h2 { margin: 0; font-size: 17.5px; font-weight: 800; }
+
+.close-x {
+  width: 31px;
+  height: 31px;
+  border-radius: 10px;
+  background: var(--panel2);
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+}
+.close-x:hover { color: var(--text); background: var(--panel-hover); }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.field { display: grid; gap: 5px; margin-bottom: 10px; }
+.field.full { grid-column: 1 / -1; }
+.field label { font-size: 10px; color: var(--muted); font-weight: 800; letter-spacing: 0.7px; text-transform: uppercase; }
+
+.field input, .field select, .field textarea {
+  width: 100%;
+  padding: 9.5px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 11px;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.cat-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.cat-pill {
+  padding: 5.5px 9.5px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1.5px solid var(--line);
+  background: var(--bg);
+  color: var(--text-soft);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.cat-pill .dot { width: 8px; height: 8px; border-radius: 50%; }
+.cat-pill.active { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+
+.modal-actions { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 12px; }
+.modal-actions-right { display: flex; gap: 8px; margin-left: auto; }
+
+/* Date Calculator Result Card */
+.calc-result-box {
+  background: var(--primary-soft);
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent);
+  border-radius: 15px;
+  padding: 15px;
+  margin-top: 12px;
+  text-align: center;
+}
+
+.calc-result-box strong {
+  display: block;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: -0.5px;
+}
+
+.calc-result-box small {
+  display: block;
+  font-size: 12px;
+  color: var(--text-soft);
+  margin-top: 4px;
+}
+
+.calc-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.calc-meta-item {
+  background: var(--panel);
+  border-radius: 10px;
+  padding: 8px 6px;
+}
+.calc-meta-item b { display: block; font-size: 14px; color: var(--text); }
+.calc-meta-item span { font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; }
+
+/* Search Modal */
+.search-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg);
+  border: 1.5px solid var(--line);
+  border-radius: 13px;
+  padding: 9px 13px;
+  margin-bottom: 12px;
+}
+.search-input-wrap:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.search-input-wrap input { border: 0; background: transparent; outline: none; width: 100%; font-size: 13.5px; }
+.search-results { max-height: 290px; display: grid; gap: 6px; }
+.search-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; border-radius: 11px; background: var(--panel2); text-align: left; width: 100%; }
+.search-item:hover { background: var(--primary-soft); color: var(--primary); }
+.search-item b { display: block; font-size: 12.5px; }
+.search-item small { color: var(--muted); font-size: 10.5px; }
+
+/* Minimal Toast ONLY for CRUD Undo / Errors (NEVER for theme/color/toggles!) */
+.toast-stack {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 95;
+  pointer-events: none;
+  max-width: min(330px, calc(100vw - 24px));
+}
+
+.toast-card {
+  pointer-events: auto;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 13px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+  animation: toastEnter 0.34s var(--spring) forwards;
+}
+
+.toast-card.leaving { animation: toastLeave 0.24s var(--ease) forwards; }
+@keyframes toastEnter { from { opacity: 0; transform: translateY(18px) scale(0.92); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes toastLeave { to { opacity: 0; transform: translateX(26px) scale(0.92); } }
+
+.toast-ico { width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; flex-shrink: 0; background: var(--primary-soft); color: var(--primary); }
+.toast-card.type-success .toast-ico { background: rgba(16, 185, 129, 0.15); color: var(--green); }
+.toast-card.type-danger .toast-ico { background: var(--holiday-bg); color: var(--danger); }
+.toast-body { flex: 1; min-width: 0; }
+.toast-body b { display: block; font-size: 12.5px; }
+.toast-body small { display: block; font-size: 10.5px; color: var(--muted); }
+.toast-undo { background: var(--primary); color: #fff; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+
+/* Confetti Micro-Particles */
+.spark-particle {
+  position: fixed;
+  width: 6.5px;
+  height: 6.5px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 100;
+  animation: sparkFly 0.68s var(--ease) forwards;
+}
+@keyframes sparkFly {
+  0% { opacity: 1; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0.2); }
+}
+
+/* ==================== MOBILE NAVIGATION & FAB ==================== */
+.mobile-nav {
+  display: none;
+  flex-shrink: 0;
+  background: var(--panel);
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--line);
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  justify-content: space-around;
+  z-index: 40;
+}
+
+.mobile-nav button {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding: 6px 11px;
+  border-radius: 12px;
+}
+
+.mobile-nav button.active { color: var(--primary); background: var(--primary-soft); }
+
+.mobile-fab {
+  display: none;
+  position: fixed;
+  right: 16px;
+  bottom: calc(68px + env(safe-area-inset-bottom));
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--primary), var(--primary2));
+  color: #fff;
+  place-items: center;
+  box-shadow: 0 10px 26px var(--primary-glow);
+  z-index: 45;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 1120px) {
+  .app { grid-template-columns: 220px minmax(0, 1fr); }
+  .workspace-grid { grid-template-columns: minmax(0, 1fr) 286px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .charts-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 860px) {
+  .app { display: flex; flex-direction: column; height: 100dvh; }
+  .sidebar { display: none; }
+  .mobile-brand-logo { display: grid; }
+  .mobile-nav { display: flex; }
+  .mobile-fab { display: grid; }
+
+  main { flex: 1; min-height: 0; padding: 9px 11px 8px; }
+  .topbar { margin-bottom: 7px; min-height: 38px; }
+  .welcome h1 { font-size: 16px; }
+  .ticker-line { font-size: 10.5px; }
+  .icon-btn { width: 34px; height: 34px; border-radius: 10px; }
+  .theme-pill-switch { width: 50px; height: 28px; }
+  .theme-pill-knob { width: 20px; height: 20px; }
+  body.dark .theme-pill-knob { transform: translateX(22px) rotate(360deg); }
+
+  .toolbar { gap: 6px; }
+  .month-title h2 { font-size: 15.5px; min-width: auto; }
+  .arrows button { width: 28px; height: 28px; }
+  .secondary-btn { padding: 5.5px 9px; font-size: 11px; }
+  #addBtn { display: none; }
+  .segmented button { padding: 4.5px 8.5px; font-size: 11px; }
+
+  .workspace-grid { display: flex; flex-direction: column; gap: 9px; }
+
+  .calendar-card {
+    height: auto;
+    flex-shrink: 0;
+    padding: 8px;
+    border-radius: 16px;
+  }
+
+  .calendar-card.is-alt-view,
+  .workspace-grid.extended-mode .calendar-card {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+  }
+
+  .weekdays { margin-bottom: 4px; gap: 3px; }
+  .weekdays div { font-size: 9.5px; padding: 2px 0; }
+
+  .calendar-grid { grid-template-rows: repeat(6, 41px); gap: 3px; }
+  .workspace-grid.extended-mode .calendar-grid { grid-template-rows: repeat(6, minmax(0, 1fr)); }
+
+  .day { border-radius: 10px; padding: 3px 2px; align-items: center; justify-content: center; border-color: transparent; }
+  .workspace-grid.extended-mode .day { align-items: stretch; justify-content: flex-start; padding: 4px 3px; border-color: color-mix(in srgb, var(--line) 55%, transparent); }
+
+  .day-num { margin: 0; justify-content: center; }
+  .workspace-grid.extended-mode .day-num { justify-content: space-between; margin-bottom: 2px; }
+  .day-num-val { width: 23px; height: 23px; font-size: 12px; }
+  .day-sub-cal { display: none; }
+  .workspace-grid.extended-mode .day-sub-cal { display: block; font-size: 8px; }
+
+  .day-chips { display: none; }
+  .day-dots-mobile { display: flex; }
+  .workspace-grid.extended-mode .day-chips { display: flex; }
+  .workspace-grid.extended-mode .day-dots-mobile { display: none; }
+  .workspace-grid.extended-mode .event-chip { font-size: 8.5px; padding: 1.5px 3.5px; }
+
+  .right-panel { flex: 1; min-height: 0; gap: 8px; }
+  .right-panel.hide-on-alt { display: none; }
+  .day-summary-card { padding: 10px 12px; border-radius: 15px; }
+  .day-summary-top h3 { font-size: 14px; }
+  .inspector-card { padding: 10px 12px; border-radius: 15px; }
+
+  .toast-stack { right: 12px; left: 12px; bottom: calc(66px + env(safe-area-inset-bottom)); max-width: none; }
+  .form-grid { grid-template-columns: 1fr; }
+  .field.full { grid-column: auto; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Desktop Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M12 7v5l3.5 2"/>
+          <path d="M16.5 3.5 19 6"/>
+        </svg>
+      </div>
+      <div>
+        <strong>chronova</strong>
+        <small>smart calendar</small>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Workspace</div>
+      <nav class="nav">
+        <button class="active" data-page="calendar">
+          <span class="ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+          Calendar
+        </button>
+        <button data-page="holidays">
+          <span class="ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.1 1 5.9L12 16.4 6.8 19.2l1-5.9-4.3-4.1 5.9-.9L12 3z"/></svg></span>
+          Holidays & Festivals
+          <span class="badge" id="holCountBadge">0</span>
+        </button>
+        <button data-page="tasks">
+          <span class="ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><rect x="3" y="5" width="6" height="6" rx="1.5"/><path d="m4.5 8 1.2 1.2L8 6.8M13 8h8M13 16h8"/><rect x="3" y="13" width="6" height="6" rx="1.5"/></svg></span>
+          Tasks
+          <span class="badge" id="pendingTaskBadge">0</span>
+        </button>
+        <button data-page="insights">
+          <span class="ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 15v2M12 11v6M17 7v10"/></svg></span>
+          Insights
+        </button>
+        <button data-page="settings">
+          <span class="ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01A1.65 1.65 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></span>
+          Settings
+        </button>
+      </nav>
+    </div>
+
+    <div class="mini">
+      <div class="mini-head">
+        <span id="miniMonth">November 2026</span>
+        <div class="mini-nav">
+          <button id="miniPrev" aria-label="Previous month"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></button>
+          <button id="miniNext" aria-label="Next month"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg></button>
+        </div>
+      </div>
+      <div class="mini-grid" id="miniGrid"></div>
+    </div>
+
+    <div class="side-bottom">
+      <div class="next-holiday-box" id="nextHolidayCard" title="Jump to upcoming holiday">
+        <div class="nh-tag">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.1 1 5.9L12 16.4 6.8 19.2l1-5.9-4.3-4.1 5.9-.9L12 3z"/></svg>
+          <span id="nhCountdown">Upcoming</span>
+        </div>
+        <b id="nhName">Loading...</b>
+        <small id="nhDate">Tap to jump</small>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Workspace -->
+  <main>
+    <header class="topbar">
+      <div class="top-left">
+        <div class="mobile-brand-logo" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+        </div>
+        <div class="welcome">
+          <h1 id="greeting">Good Afternoon</h1>
+          <div class="ticker-line">
+            <span class="live-dot"></span>
+            <span id="todayLong">Loading calendar...</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <!-- Tactile Animated Day/Night Theme Toggle -->
+        <button class="theme-pill-switch" id="themeBtn" title="Switch Light / Dark Theme" aria-label="Switch Light or Dark Theme">
+          <svg class="sky-stars" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="8" r="2"/><circle cx="16" cy="6" r="1.4"/><circle cx="12" cy="17" r="1.8"/></svg>
+          <svg class="sky-clouds" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 19H7a4 4 0 0 1-.4-7.98A5.5 5.5 0 0 1 17.3 9.5a3.5 3.5 0 0 1 .2 9.5Z"/></svg>
+          <span class="theme-pill-knob">
+            <svg class="ico-sun" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7-17 1.4 1.4m11.2 11.2L19 19M2 12h2M20 12h2m-15.6 5.6L5 19M19 5l-1.4 1.4"/></svg>
+            <svg class="ico-moon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+          </span>
+        </button>
+
+        <button class="icon-btn" id="paletteBtn" title="Accent Colors" aria-label="Accent colors">
+          <span class="palette-dot"></span>
+        </button>
+
+        <button class="icon-btn" id="notifBtn" title="Reminders" aria-label="Reminders">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="notif-dot" id="notifDot"></span>
+        </button>
+
+        <!-- 3-Dot Quick Actions Menu (Matches Screenshot 2!) -->
+        <button class="icon-btn" id="moreMenuBtn" title="More options" aria-label="More options">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="page-container">
+      <!-- ==================== PAGE 1: CALENDAR ==================== -->
+      <section class="page-view active" id="pageCalendar">
+        <div class="toolbar">
+          <div class="month-title">
+            <h2 id="monthTitle" title="Tap to jump to any date">November 2026</h2>
+            <div class="arrows">
+              <button id="prev" aria-label="Previous"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></button>
+              <button id="next" aria-label="Next"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg></button>
+            </div>
+            <button class="secondary-btn" id="todayBtn">Today</button>
+          </div>
+
+          <div class="actions">
+            <div class="segmented" id="viewSwitch">
+              <button class="active" data-view="month">Month</button>
+              <button data-view="week">Week</button>
+              <button data-view="day">Day</button>
+            </div>
+            <button class="primary-btn" id="addBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              New Event
+            </button>
+          </div>
+        </div>
+
+        <div class="workspace-grid" id="workspaceGrid">
+          <!-- Calendar Card -->
+          <section class="card calendar-card" id="calendarCard">
+            <div id="monthView">
+              <div class="weekdays" id="weekdaysHeader"></div>
+              <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
+            <div id="weekView" class="week-view"></div>
+            <div id="dayView" class="day-view"></div>
+          </section>
+
+          <!-- Right Inspector Panel -->
+          <aside class="right-panel" id="rightPanel">
+            <section class="card day-summary-card">
+              <div class="day-summary-top">
+                <div>
+                  <h3 id="selectedDayTitle">Thursday, Nov 19</h3>
+                  <small id="selectedDaySub">Today · Regular Day</small>
+                </div>
+                <div class="mini-ring-wrap" title="Daily Task Focus Score">
+                  <svg width="42" height="42" viewBox="0 0 42 42">
+                    <circle class="ring-bg" cx="21" cy="21" r="17"></circle>
+                    <circle class="ring-fg" id="focusRing" cx="21" cy="21" r="17" stroke-dasharray="106.8" stroke-dashoffset="106.8"></circle>
+                  </svg>
+                  <div class="mini-ring-pct" id="focusPct">0%</div>
+                </div>
+              </div>
+              <div id="dayAlmanacSlot"></div>
+              <div class="day-holiday-banners" id="dayHolidayBanners"></div>
+            </section>
+
+            <section class="card inspector-card">
+              <div class="inspector-head">
+                <div class="segmented" id="rightTabSwitch">
+                  <button class="active" data-rtab="agenda">Schedule</button>
+                  <button data-rtab="tasks">Tasks <span id="dayTaskCount" style="opacity:.75"></span></button>
+                </div>
+                <button class="link-btn" id="inspectorAddBtn">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                  <span id="inspectorAddText">Event</span>
+                </button>
+              </div>
+              <div class="inspector-body scroll-area" id="inspectorBody"></div>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ==================== PAGE 2: HOLIDAYS & FESTIVALS ==================== -->
+      <section class="page-view" id="pageHolidays">
+        <div class="toolbar">
+          <div class="month-title">
+            <h2 id="holidaysHeading">Holidays & Festivals 2026</h2>
+          </div>
+          <div class="actions">
+            <div class="segmented" id="holYearSwitch">
+              <button data-hyear="2025">2025</button>
+              <button class="active" data-hyear="2026">2026</button>
+              <button data-hyear="2027">2027</button>
+            </div>
+            <div class="segmented" id="holTypeSwitch">
+              <button class="active" data-htype="all">All</button>
+              <button data-htype="holiday">Holidays</button>
+              <button data-htype="festival">Festivals</button>
+            </div>
+          </div>
+        </div>
+        <div class="scroll-area" style="flex:1;min-height:0">
+          <div class="holidays-grid" id="holidaysList"></div>
+        </div>
+      </section>
+
+      <!-- ==================== PAGE 3: TASKS ==================== -->
+      <section class="page-view" id="pageTasks">
+        <div class="toolbar">
+          <div class="month-title"><h2>Tasks Workspace</h2></div>
+          <div class="actions">
+            <div class="segmented" id="taskFilters">
+              <button class="active" data-filter="all">All</button>
+              <button data-filter="pending">Pending</button>
+              <button data-filter="done">Done</button>
+            </div>
+            <button class="primary-btn" id="addTaskPageBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              New Task
+            </button>
+          </div>
+        </div>
+        <div class="card scroll-area" style="flex:1;min-height:0;padding:14px" id="fullTaskList"></div>
+      </section>
+
+      <!-- ==================== PAGE 4: INSIGHTS ==================== -->
+      <section class="page-view" id="pageInsights">
+        <div class="toolbar"><div class="month-title"><h2>Time Insights</h2></div></div>
+        <div class="scroll-area" style="flex:1;min-height:0;display:flex;flex-direction:column;gap:14px;padding-bottom:14px">
+          <div class="stats-grid" id="insightStats"></div>
+          <div class="charts-grid">
+            <div class="card chart-card">
+              <h3>Events Scheduled (This Week)</h3>
+              <div class="bar-chart" id="weekBarChart"></div>
+            </div>
+            <div class="card chart-card">
+              <h3>Event Categories</h3>
+              <div class="donut-wrap" id="categoryDonut"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== PAGE 5: XIAOMI / NATIVE SETTINGS ==================== -->
+      <section class="page-view" id="pageSettings">
+        <div class="toolbar">
+          <div class="month-title"><h2>Settings</h2></div>
+        </div>
+        <div class="scroll-area" style="flex:1;min-height:0">
+          <div class="settings-wrap">
+
+            <!-- Calendar Accounts -->
+            <div class="settings-group">
+              <button class="s-row clickable" id="openAccountsBtn">
+                <div class="s-row-info">
+                  <b>Calendar accounts</b>
+                  <small id="accountsSummary">5 active calendars</small>
+                </div>
+                <div class="s-row-right">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+                </div>
+              </button>
+            </div>
+
+            <!-- General (Matches Screenshot 1!) -->
+            <div class="settings-group-label">General</div>
+            <div class="settings-group">
+              <div class="s-row">
+                <div class="s-row-info"><b>Start of the week</b></div>
+                <div class="s-row-right">
+                  <select class="s-select" id="setWeekStart">
+                    <option value="0">Region default (Sun)</option>
+                    <option value="1">Monday</option>
+                    <option value="6">Saturday</option>
+                  </select>
+                </div>
+              </div>
+
+              <button class="s-row clickable" id="openTzBtn">
+                <div class="s-row-info">
+                  <b>Time zone</b>
+                  <small id="tzLabel">India Standard Time (GMT+05:30)</small>
+                </div>
+                <div class="s-row-right">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+                </div>
+              </button>
+
+              <div class="s-row">
+                <div class="s-row-info">
+                  <b>Extended month view</b>
+                  <small>Expand calendar grid to show more events directly in dates</small>
+                </div>
+                <button class="ios-switch" id="toggleExtendedMonth" role="switch" aria-checked="false"></button>
+              </div>
+
+              <div class="s-row">
+                <div class="s-row-info">
+                  <b>Show week number</b>
+                  <small>Display ISO week numbers along the calendar left edge</small>
+                </div>
+                <button class="ios-switch" id="toggleWeekNum" role="switch" aria-checked="false"></button>
+              </div>
+
+              <div class="s-row">
+                <div class="s-row-info">
+                  <b>Show Lunar &amp; Panchang info</b>
+                  <small>Display Tithi, Purnima, Amavasya &amp; Moon phase details</small>
+                </div>
+                <button class="ios-switch" id="toggleAlmanac" role="switch" aria-checked="false"></button>
+              </div>
+
+              <div class="s-row">
+                <div class="s-row-info"><b>Other calendars</b></div>
+                <div class="s-row-right">
+                  <select class="s-select" id="setOtherCal">
+                    <option value="none">None</option>
+                    <option value="lunar">Hindu Lunar (Tithi)</option>
+                    <option value="indian">Indian National (Saka)</option>
+                    <option value="islamic">Islamic (Hijri)</option>
+                  </select>
+                </div>
+              </div>
+
+              <button class="s-row clickable" id="openGlobalHolBtn">
+                <div class="s-row-info">
+                  <b>Global holidays</b>
+                  <small id="globalHolSummary">India Holidays &amp; Festivals</small>
+                </div>
+                <div class="s-row-right">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+                </div>
+              </button>
+            </div>
+
+            <!-- Reminders (Matches Screenshot 1!) -->
+            <div class="settings-group-label">Reminders</div>
+            <div class="settings-group">
+              <div class="s-row">
+                <div class="s-row-info">
+                  <b>Reminders</b>
+                  <small>Alert chime &amp; reminder banner for upcoming events</small>
+                </div>
+                <button class="ios-switch" id="toggleReminders" role="switch" aria-checked="true"></button>
+              </div>
+
+              <div class="s-row">
+                <div class="s-row-info"><b>Default reminder time</b></div>
+                <div class="s-row-right">
+                  <select class="s-select" id="setDefReminder">
+                    <option value="0">At event time</option>
+                    <option value="5">5 mins before</option>
+                    <option value="10">10 mins before</option>
+                    <option value="15">15 mins before</option>
+                    <option value="30">30 mins before</option>
+                    <option value="60">1 hour before</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="s-row">
+                <div class="s-row-info"><b>Default all-day reminder time</b></div>
+                <div class="s-row-right">
+                  <input type="time" class="s-time-input" id="setAllDayTime" value="08:00">
+                </div>
+              </div>
+
+              <div class="s-row">
+                <div class="s-row-info">
+                  <b>Import contacts' birthdays</b>
+                  <small>Automatically display saved contacts' birthdays on calendar</small>
+                </div>
+                <button class="ios-switch" id="toggleBirthdays" role="switch" aria-checked="true"></button>
+              </div>
+
+              <button class="s-row clickable" id="openBirthdaysBtn">
+                <div class="s-row-info">
+                  <b>Manage birthdays</b>
+                  <small id="bdayCountSummary">Add or import friends &amp; family birthdays</small>
+                </div>
+                <div class="s-row-right">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+                </div>
+              </button>
+            </div>
+
+            <!-- Appearance & Theme -->
+            <div class="settings-group-label">Appearance</div>
+            <div class="settings-group">
+              <div class="s-row">
+                <div class="s-row-info">
+                  <b>Dark theme</b>
+                  <small>Smooth radial day-to-night switch</small>
+                </div>
+                <button class="theme-pill-switch" id="settingsThemeToggle" aria-label="Toggle Dark Theme">
+                  <svg class="sky-stars" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="8" r="2"/><circle cx="16" cy="6" r="1.4"/><circle cx="12" cy="17" r="1.8"/></svg>
+                  <svg class="sky-clouds" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 19H7a4 4 0 0 1-.4-7.98A5.5 5.5 0 0 1 17.3 9.5a3.5 3.5 0 0 1 .2 9.5Z"/></svg>
+                  <span class="theme-pill-knob">
+                    <svg class="ico-sun" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+                    <svg class="ico-moon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+                  </span>
+                </button>
+              </div>
+
+              <div class="s-row" style="flex-direction:column;align-items:stretch;gap:10px">
+                <div class="s-row-info"><b>Accent color</b></div>
+                <div class="swatch-grid" id="settingsSwatches" style="margin:0"></div>
+              </div>
+
+              <div class="s-row">
+                <div class="s-row-info"><b>24-hour time format</b></div>
+                <button class="ios-switch" id="toggle24h" role="switch" aria-checked="false"></button>
+              </div>
+            </div>
+
+            <!-- Additional (Matches Screenshot 1!) -->
+            <div class="settings-group-label">Additional</div>
+            <div class="settings-group">
+              <div class="s-row">
+                <div class="s-row-info">
+                  <b>Backup &amp; Restore</b>
+                  <small>Export or import all events, tasks &amp; birthdays (JSON)</small>
+                </div>
+                <div class="actions">
+                  <button class="secondary-btn" id="exportBtn">Export</button>
+                  <button class="secondary-btn" id="importBtn">Import</button>
+                  <input type="file" id="importFile" accept=".json" hidden>
+                </div>
+              </div>
+
+              <button class="s-row clickable" id="openAboutBtn">
+                <div class="s-row-info">
+                  <b>About this app</b>
+                  <small>Chronova Calendar v3.0 · Offline-first smart planner</small>
+                </div>
+                <div class="s-row-right">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>
+                </div>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Mobile Bottom Navigation -->
+  <nav class="mobile-nav">
+    <button class="active" data-page="calendar">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      Calendar
+    </button>
+    <button data-page="holidays">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.1 1 5.9L12 16.4 6.8 19.2l1-5.9-4.3-4.1 5.9-.9L12 3z"/></svg>
+      Festivals
+    </button>
+    <button data-page="tasks">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><rect x="3" y="5" width="6" height="6" rx="1.5"/><path d="m4.5 8 1.2 1.2L8 6.8M13 8h8M13 16h8"/><rect x="3" y="13" width="6" height="6" rx="1.5"/></svg>
+      Tasks
+    </button>
+    <button data-page="insights">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 15v2M12 11v6M17 7v10"/></svg>
+      Insights
+    </button>
+    <button data-page="settings">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01A1.65 1.65 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+      Settings
+    </button>
+  </nav>
+</div>
+
+<!-- Mobile Floating Add Button -->
+<button class="mobile-fab" id="mobileFab" aria-label="Create new event">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+
+<!-- ==================== POPOVERS ==================== -->
+<!-- 3-Dot Overflow Menu (Exact items from Screenshot 2!) -->
+<div class="popover more-menu" id="moreMenuPopover">
+  <button id="menuSearch">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    Search for events
+  </button>
+  <button id="menuJump">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m11 15 2 2 4-4"/></svg>
+    Jump to date
+  </button>
+  <button id="menuCalc">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="3"/><path d="M8 6h8M8 12h2M14 12h2M8 16h2M14 16h2"/></svg>
+    Calculate date
+  </button>
+  <button id="menuSettings">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01A1.65 1.65 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+    Settings
+  </button>
+</div>
+
+<!-- Accent Color Popover -->
+<div class="popover" id="palettePopover">
+  <h4>Accent Color <small style="color:var(--muted);font-weight:600">Instant apply</small></h4>
+  <div class="swatch-grid" id="popoverSwatches" style="margin-bottom:4px"></div>
+</div>
+
+<!-- Reminders Popover -->
+<div class="popover" id="notifPopover">
+  <h4>Reminders &amp; Upcoming <span id="notifCount" style="color:var(--primary);font-size:12px">0</span></h4>
+  <div id="notifList" class="scroll-area" style="max-height:260px"></div>
+</div>
+
+<!-- ==================== MODALS ==================== -->
+<!-- Event Create/Edit Modal -->
+<div class="modal-backdrop" id="eventModal">
+  <div class="modal">
+    <div class="close-row">
+      <h2 id="modalTitle">Create event</h2>
+      <button class="close-x" data-close="eventModal" aria-label="Close"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <form id="eventForm">
+      <div class="field full">
+        <label for="eventName">Event title</label>
+        <input id="eventName" required maxlength="70" placeholder="e.g. Physics numericals practice">
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="eventDate">Date</label>
+          <input id="eventDate" type="date" required>
+        </div>
+        <div class="field">
+          <label>All-day event</label>
+          <div style="display:flex;align-items:center;height:39px;gap:10px">
+            <button type="button" class="ios-switch" id="eventAllDaySwitch" role="switch" aria-checked="false"></button>
+            <span id="allDayLabel" style="font-size:12px;color:var(--muted);font-weight:600">Off</span>
+          </div>
+        </div>
+        <div class="field" id="startTimeField">
+          <label for="eventStart">Start time</label>
+          <input id="eventStart" type="time" value="09:00" required>
+        </div>
+        <div class="field" id="endTimeField">
+          <label for="eventEnd">End time</label>
+          <input id="eventEnd" type="time" value="10:00" required>
+        </div>
+        <div class="field">
+          <label for="eventRepeat">Repeat</label>
+          <select id="eventRepeat">
+            <option value="none">Does not repeat</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="eventReminder">Reminder</label>
+          <select id="eventReminder">
+            <option value="0">At event time</option>
+            <option value="5">5 mins before</option>
+            <option value="10">10 mins before</option>
+            <option value="15">15 mins before</option>
+            <option value="30">30 mins before</option>
+            <option value="60">1 hour before</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label>Calendar account</label>
+          <input type="hidden" id="eventCategory" value="purple">
+          <div class="cat-pills" id="catPills"></div>
+        </div>
+        <div class="field full">
+          <label for="eventNotes">Notes</label>
+          <textarea id="eventNotes" rows="2" placeholder="Optional details or location"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="danger-btn" id="modalDeleteBtn" style="display:none">Delete</button>
+        <div class="modal-actions-right">
+          <button type="button" class="secondary-btn" data-close="eventModal">Cancel</button>
+          <button class="primary-btn" type="submit">Save Event</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Task Modal -->
+<div class="modal-backdrop" id="taskModal">
+  <div class="modal">
+    <div class="close-row">
+      <h2>New task</h2>
+      <button class="close-x" data-close="taskModal" aria-label="Close"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <form id="taskForm">
+      <div class="field">
+        <label for="taskName">Task</label>
+        <input id="taskName" required maxlength="90" placeholder="What needs to get done?">
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="taskDate">Due date</label>
+          <input id="taskDate" type="date">
+        </div>
+        <div class="field">
+          <label for="taskPriority">Priority</label>
+          <select id="taskPriority">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <div class="modal-actions-right">
+          <button type="button" class="secondary-btn" data-close="taskModal">Cancel</button>
+          <button class="primary-btn" type="submit">Add Task</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Search Modal -->
+<div class="modal-backdrop" id="searchModal">
+  <div class="modal">
+    <div class="close-row">
+      <h2>Search for events</h2>
+      <button class="close-x" data-close="searchModal" aria-label="Close"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="search-input-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="searchInput" placeholder="Search events, festivals, birthdays, tasks..." autocomplete="off">
+    </div>
+    <div class="search-results scroll-area" id="searchResults"></div>
+  </div>
+</div>
+
+<!-- Jump to Date Modal (From Screenshot 2!) -->
+<div class="modal-backdrop" id="jumpModal">
+  <div class="modal">
+    <div class="close-row">
+      <h2>Jump to date</h2>
+      <button class="close-x" data-close="jumpModal" aria-label="Close"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <form id="jumpForm">
+      <div class="field">
+        <label for="jumpDateInput">Select any date</label>
+        <input id="jumpDateInput" type="date" required>
+      </div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px">
+        <button type="button" class="secondary-btn" data-quick-jump="0">Today</button>
+        <button type="button" class="secondary-btn" data-quick-jump="7">+1 Week</button>
+        <button type="button" class="secondary-btn" data-quick-jump="30">+30 Days</button>
+        <button type="button" class="secondary-btn" data-quick-jump="365">+1 Year</button>
+      </div>
+      <div class="modal-actions">
+        <div class="modal-actions-right">
+          <button type="button" class="secondary-btn" data-close="jumpModal">Cancel</button>
+          <button class="primary-btn" type="submit">Go to Date</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Calculate Date Modal (From Screenshot 2!) -->
+<div class="modal-backdrop" id="calcModal">
+  <div class="modal">
+    <div class="close-row">
+      <h2>Calculate date</h2>
+      <button class="close-x" data-close="calcModal" aria-label="Close"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="segmented" id="calcTabs" style="margin-bottom:14px">
+      <button class="active" data-ctab="diff" style="flex:1">Days Between</button>
+      <button data-ctab="offset" style="flex:1">Add / Subtract Days</button>
+    </div>
+
+    <!-- Mode 1: Difference -->
+    <div id="calcDiffPane">
+      <div class="form-grid">
+        <div class="field"><label for="calcStart">Start date</label><input id="calcStart" type="date"></div>
+        <div class="field"><label for="calcEnd">End date</label><input id="calcEnd" type="date"></div>
+      </div>
+      <div class="calc-result-box" id="calcDiffResult"></div>
+    </div>
+
+    <!-- Mode 2: Offset -->
+    <div id="calcOffsetPane" style="display:none">
+      <div class="form-grid">
+        <div class="field"><label for="calcBase">Base date</label><input id="calcBase" type="date"></div>
+        <div class="field"><label for="calcDir">Direction</label>
+          <select id="calcDir"><option value="1">After (+)</option><option value="-1">Before (-)</option></select>
+        </div>
+        <div class="field"><label for="calcAmount">Amount</label><input id="calcAmount" type="number" min="0" max="99999" value="30"></div>
+        <div class="field"><label for="calcUnit">Unit</label>
+          <select id="calcUnit"><option value="days">Days</option><option value="weeks">Weeks</option><option value="months">Months</option><option value="years">Years</option></select>
+        </div>
+      </div>
+      <div class="calc-result-box" id="calcOffsetResult"></div>
+      <div class="modal-actions">
+        <div class="modal-actions-right">
+          <button type="button" class="primary-btn" id="jumpCalcResultBtn">Jump to Result Date</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Calendar Accounts Modal -->
+<div class="modal-backdrop" id="accountsModal">
+  <div class="modal">
+    <div class="close-row">
+      <h2>Calendar accounts</h2>
+      <button class="close-x" data-close="accountsModal" aria-label="Close"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <p style="margin:0 0 12px;font-size:12px;color:var(--muted)">Choose which calendars appear on your Chronova grid.</p>
+    <div class="settings-group" id="accountsToggleList"></div>
+  </div>
+</div>
+
+<!-- Global Holidays Modal -->
+<div class="modal-backdrop" id="globalHolModal">
+  <div class="modal">
+    <div class="close-row">
+      <h2>Global holidays</h2>
+      <button class="close-x" data-close="globalHolModal" aria-label="Close"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <p style="margin:0 0 12px;font-size:12px;color:var(--muted)">Select regional holidays and festival calendars to show.</p>
+    <div class="settings-group" id="globalHolToggleList"></div>
+  </div>
+</div>
+
+<!-- Time Zone Modal -->
+<div class="modal-backdrop" id="tzModal">
+  <div class="modal">
+    <div class="close-row">
+      <h2>Time zone</h2>
+      <button class="close-x" data-close="tzModal" aria-label="Close"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="settings-group" id="tzList"></div>
+  </div>
+</div>
+
+<!-- Manage Birthdays Modal -->
+<div class="modal-backdrop" id="birthdaysModal">
+  <div class="modal">
+    <div class="close-row">
+      <h2>Contacts' birthdays</h2>
+      <button class="close-x" data-close="birthdaysModal" aria-label="Close"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <form id="bdayForm" class="form-grid" style="margin-bottom:12px">
+      <div class="field"><label for="bdayName">Person name</label><input id="bdayName" required maxlength="40" placeholder="e.g. Aman"></div>
+      <div class="field"><label for="bdayDate">Birth date</label><input id="bdayDate" type="date" required></div>
+      <div class="field full" style="margin:0"><button class="primary-btn" type="submit" style="width:100%;justify-content:center">Add Birthday</button></div>
+    </form>
+    <div id="bdayManageList" class="scroll-area" style="max-height:220px"></div>
+  </div>
+</div>
+
+<!-- About This App Modal -->
+<div class="modal-backdrop" id="aboutModal">
+  <div class="modal" style="text-align:center">
+    <div class="close-row">
+      <h2>About Chronova</h2>
+      <button class="close-x" data-close="aboutModal" aria-label="Close"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="logo" style="margin:6px auto 12px;width:54px;height:54px;border-radius:16px">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/><path d="M16.5 3.5 19 6"/></svg>
+    </div>
+    <h3 style="margin:0 0 3px;font-size:18px">Chronova Calendar</h3>
+    <small style="color:var(--muted);font-weight:700">Version 3.0 · Smart Offline Calendar</small>
+    <p style="font-size:12.5px;color:var(--text-soft);margin:12px 0 14px">Designed for seamless scheduling with Indian &amp; Global Holidays, Panchang/Lunar phases, Date Calculator, Jump-to-Date, Recurring Events, Birthdays, and silky radial Theme Transitions.</p>
+    <div class="calc-meta-grid" id="aboutStats"></div>
+    <p style="font-size:11px;color:var(--muted);margin:14px 0 0">Shortcuts: <b>Ctrl+K</b> Search · <b>Esc</b> Close modals · Swipe grid on mobile</p>
+  </div>
+</div>
+
+<!-- Toast Stack (Strict: Only Undo / Errors / Backup) -->
+<div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+/* ==================== CONSTANTS ==================== */
+const ACCENTS = {
+  violet:  { name: 'Violet',  primary: '#6750e8', primary2: '#927fff', soft: 'rgba(103,80,232,0.13)', glow: 'rgba(103,80,232,0.32)' },
+  indigo:  { name: 'Indigo',  primary: '#4f46e5', primary2: '#818cf8', soft: 'rgba(79,70,229,0.13)',  glow: 'rgba(79,70,229,0.32)' },
+  ocean:   { name: 'Ocean',   primary: '#2563eb', primary2: '#60a5fa', soft: 'rgba(37,99,235,0.13)',  glow: 'rgba(37,99,235,0.32)' },
+  emerald: { name: 'Emerald', primary: '#0d9488', primary2: '#2dd4bf', soft: 'rgba(13,148,136,0.13)', glow: 'rgba(13,148,136,0.32)' },
+  rose:    { name: 'Rose',    primary: '#e11d48', primary2: '#fb7185', soft: 'rgba(225,29,72,0.13)',  glow: 'rgba(225,29,72,0.32)' },
+  amber:   { name: 'Amber',   primary: '#d97706', primary2: '#fbbf24', soft: 'rgba(217,119,6,0.14)',  glow: 'rgba(217,119,6,0.32)' }
+};
+
+const CATEGORIES = [
+  { id: 'purple', label: 'Personal',  color: '#7c5cff' },
+  { id: 'blue',   label: 'Study',     color: '#2563eb' },
+  { id: 'green',  label: 'Work',      color: '#10b981' },
+  { id: 'orange', label: 'Important', color: '#f59e0b' },
+  { id: 'pink',   label: 'Family',    color: '#ec4899' }
+];
+
+const TIMEZONES = [
+  { id: 'Asia/Kolkata',       label: 'India Standard Time (GMT+05:30)' },
+  { id: 'UTC',                label: 'UTC (GMT+00:00)' },
+  { id: 'Asia/Dubai',         label: 'Gulf Standard Time (GMT+04:00)' },
+  { id: 'Asia/Singapore',     label: 'Singapore Time (GMT+08:00)' },
+  { id: 'Asia/Tokyo',         label: 'Japan Standard Time (GMT+09:00)' },
+  { id: 'Europe/London',      label: 'London (GMT+00:00)' },
+  { id: 'America/New_York',   label: 'New York (EST GMT-05:00)' },
+  { id: 'America/Los_Angeles',label: 'Los Angeles (PST GMT-08:00)' }
+];
+
+/* ==================== REAL INDIAN + GLOBAL HOLIDAYS ==================== */
+const INDIA_FIXED = [
+  { md: '01-01', name: "New Year's Day", type: 'observance', region: 'intl', desc: 'First day of the Gregorian calendar' },
+  { md: '01-12', name: 'National Youth Day', type: 'observance', region: 'in_fest', desc: 'Swami Vivekananda Jayanti' },
+  { md: '01-14', name: 'Makar Sankranti / Pongal', type: 'festival', region: 'in_fest', desc: 'Harvest festival celebrating the sun’s transit' },
+  { md: '01-23', name: 'Netaji Subhas Bose Jayanti', type: 'observance', region: 'in_fest', desc: 'Parakram Diwas' },
+  { md: '01-26', name: 'Republic Day', type: 'holiday', region: 'in_hol', desc: 'National Gazetted Holiday · Constitution of India' },
+  { md: '02-28', name: 'National Science Day', type: 'observance', region: 'in_fest', desc: 'Discovery of the Raman Effect' },
+  { md: '03-08', name: "International Women's Day", type: 'observance', region: 'intl', desc: 'Celebrating women’s achievements worldwide' },
+  { md: '04-14', name: 'Ambedkar Jayanti / Baisakhi', type: 'holiday', region: 'in_hol', desc: 'Public Holiday & Harvest New Year' },
+  { md: '05-01', name: 'International Labour Day', type: 'observance', region: 'intl', desc: 'May Day / Workers’ Day' },
+  { md: '06-21', name: 'International Yoga Day', type: 'observance', region: 'intl', desc: 'Celebrating mindfulness and wellness' },
+  { md: '08-15', name: 'Independence Day', type: 'holiday', region: 'in_hol', desc: 'National Gazetted Holiday · Freedom of India' },
+  { md: '09-05', name: "Teachers' Day (India)", type: 'observance', region: 'in_fest', desc: 'Dr. S. Radhakrishnan Jayanti' },
+  { md: '09-14', name: 'Hindi Diwas', type: 'observance', region: 'in_fest', desc: 'Celebrating the Hindi language' },
+  { md: '10-02', name: 'Gandhi Jayanti', type: 'holiday', region: 'in_hol', desc: 'National Gazetted Holiday · Mahatma Gandhi Birthday' },
+  { md: '11-14', name: "Children's Day", type: 'observance', region: 'in_fest', desc: 'Bal Diwas · Pt. Nehru Jayanti' },
+  { md: '12-25', name: 'Christmas Day', type: 'holiday', region: 'in_hol', desc: 'Public Holiday' },
+  { md: '12-31', name: "New Year's Eve", type: 'observance', region: 'intl', desc: 'Final day of the calendar year' }
+];
+
+const GLOBAL_EXTRA = [
+  { md: '07-04', name: 'US Independence Day', type: 'holiday', region: 'us', desc: 'United States Federal Holiday' },
+  { md: '11-11', name: 'Veterans Day (US)', type: 'observance', region: 'us', desc: 'United States Federal Holiday' },
+  { md: '10-31', name: 'Halloween', type: 'observance', region: 'us', desc: 'Global autumn observance' },
+  { md: '12-26', name: 'Boxing Day (UK)', type: 'holiday', region: 'uk', desc: 'United Kingdom Bank Holiday' },
+  { md: '05-05', name: 'Early May Bank Holiday (UK)', type: 'holiday', region: 'uk', desc: 'UK Spring Bank Holiday' }
+];
+
+const YEAR_FESTIVALS = {
+  2025: [
+    { md: '01-13', name: 'Lohri', type: 'festival', region: 'in_fest', desc: 'Winter harvest bonfire festival' },
+    { md: '02-02', name: 'Vasant Panchami', type: 'festival', region: 'in_fest', desc: 'Saraswati Puja · Arrival of Spring' },
+    { md: '02-26', name: 'Maha Shivaratri', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday · Great Night of Shiva' },
+    { md: '03-13', name: 'Holika Dahan', type: 'festival', region: 'in_fest', desc: 'Chhoti Holi bonfire eve' },
+    { md: '03-14', name: 'Holi', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday · Festival of Colors' },
+    { md: '03-30', name: 'Ugadi / Gudi Padwa', type: 'festival', region: 'in_fest', desc: 'Chaitra Navratri & Lunar New Year' },
+    { md: '03-31', name: 'Eid-ul-Fitr', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday · End of Ramadan' },
+    { md: '04-06', name: 'Ram Navami', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday · Birth of Lord Rama' },
+    { md: '04-10', name: 'Mahavir Jayanti', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday' },
+    { md: '04-18', name: 'Good Friday', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday' },
+    { md: '05-12', name: 'Buddha Purnima', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday' },
+    { md: '06-07', name: 'Eid-ul-Adha (Bakrid)', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday · Festival of Sacrifice' },
+    { md: '07-06', name: 'Muharram', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday' },
+    { md: '08-09', name: 'Raksha Bandhan', type: 'festival', region: 'in_fest', desc: 'Sibling bond celebration' },
+    { md: '08-16', name: 'Krishna Janmashtami', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday · Birth of Lord Krishna' },
+    { md: '08-27', name: 'Ganesh Chaturthi', type: 'festival', region: 'in_fest', desc: 'Welcoming Lord Ganesha' },
+    { md: '09-05', name: 'Milad-un-Nabi / Onam', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday & Kerala Harvest Festival' },
+    { md: '10-02', name: 'Dussehra (Vijayadashami)', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday · Victory of good over evil' },
+    { md: '10-10', name: 'Karwa Chauth', type: 'festival', region: 'in_fest', desc: 'Traditional festival' },
+    { md: '10-18', name: 'Dhanteras', type: 'festival', region: 'in_fest', desc: 'Start of Diwali celebrations' },
+    { md: '10-20', name: 'Diwali (Deepavali)', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday · Festival of Lights' },
+    { md: '10-23', name: 'Bhai Dooj', type: 'festival', region: 'in_fest', desc: 'Brother-sister celebration' },
+    { md: '10-27', name: 'Chhath Puja', type: 'festival', region: 'in_fest', desc: 'Dedicated to Surya Dev' },
+    { md: '11-05', name: 'Guru Nanak Jayanti', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday · Gurpurab' }
+  ],
+  2026: [
+    { md: '01-13', name: 'Lohri', type: 'festival', region: 'in_fest', desc: 'Winter harvest bonfire festival' },
+    { md: '01-23', name: 'Vasant Panchami', type: 'festival', region: 'in_fest', desc: 'Saraswati Puja · Arrival of Spring' },
+    { md: '02-15', name: 'Maha Shivaratri', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday · Great Night of Shiva' },
+    { md: '03-03', name: 'Holika Dahan', type: 'festival', region: 'in_fest', desc: 'Chhoti Holi bonfire celebration' },
+    { md: '03-04', name: 'Holi', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday · Festival of Colors' },
+    { md: '03-19', name: 'Ugadi / Gudi Padwa', type: 'festival', region: 'in_fest', desc: 'Chaitra Navratri Begins & Lunar New Year' },
+    { md: '03-21', name: 'Eid-ul-Fitr', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday · End of Ramadan' },
+    { md: '03-26', name: 'Ram Navami', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday · Birth of Lord Rama' },
+    { md: '03-31', name: 'Mahavir Jayanti', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday' },
+    { md: '04-03', name: 'Good Friday', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday' },
+    { md: '05-01', name: 'Buddha Purnima', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday' },
+    { md: '05-27', name: 'Eid-ul-Adha (Bakrid)', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday · Festival of Sacrifice' },
+    { md: '06-26', name: 'Muharram', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday · Day of Ashura' },
+    { md: '07-16', name: 'Rath Yatra', type: 'festival', region: 'in_fest', desc: 'Puri Jagannath Chariot Festival' },
+    { md: '07-29', name: 'Guru Purnima', type: 'festival', region: 'in_fest', desc: 'Honoring teachers & mentors' },
+    { md: '08-17', name: 'Nag Panchami', type: 'festival', region: 'in_fest', desc: 'Traditional Hindu observance' },
+    { md: '08-26', name: 'Milad-un-Nabi / Onam', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday & Thiruvonam' },
+    { md: '08-28', name: 'Raksha Bandhan', type: 'festival', region: 'in_fest', desc: 'Celebrating sibling love' },
+    { md: '09-04', name: 'Krishna Janmashtami', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday · Birth of Lord Krishna' },
+    { md: '09-14', name: 'Ganesh Chaturthi', type: 'festival', region: 'in_fest', desc: 'Welcoming Lord Ganesha' },
+    { md: '10-11', name: 'Sharad Navratri Begins', type: 'festival', region: 'in_fest', desc: 'Nine nights celebrating Goddess Durga' },
+    { md: '10-19', name: 'Maha Ashtami', type: 'festival', region: 'in_fest', desc: 'Durga Ashtami celebration' },
+    { md: '10-20', name: 'Dussehra (Vijayadashami)', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday · Victory of good over evil' },
+    { md: '10-29', name: 'Karwa Chauth', type: 'festival', region: 'in_fest', desc: 'Traditional festival' },
+    { md: '11-06', name: 'Dhanteras', type: 'festival', region: 'in_fest', desc: 'Start of Diwali festivities' },
+    { md: '11-08', name: 'Diwali (Deepavali)', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday · Festival of Lights' },
+    { md: '11-09', name: 'Govardhan Puja', type: 'festival', region: 'in_fest', desc: 'Annakut celebration' },
+    { md: '11-11', name: 'Bhai Dooj', type: 'festival', region: 'in_fest', desc: 'Brother-sister celebration' },
+    { md: '11-15', name: 'Chhath Puja', type: 'festival', region: 'in_fest', desc: 'Dedicated to Surya Dev' },
+    { md: '11-24', name: 'Guru Nanak Jayanti', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday · Gurpurab & Kartik Purnima' }
+  ],
+  2027: [
+    { md: '01-13', name: 'Lohri', type: 'festival', region: 'in_fest', desc: 'Winter harvest bonfire festival' },
+    { md: '02-11', name: 'Vasant Panchami', type: 'festival', region: 'in_fest', desc: 'Saraswati Puja' },
+    { md: '03-06', name: 'Maha Shivaratri', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday' },
+    { md: '03-10', name: 'Eid-ul-Fitr', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday' },
+    { md: '03-21', name: 'Holika Dahan', type: 'festival', region: 'in_fest', desc: 'Chhoti Holi' },
+    { md: '03-22', name: 'Holi', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday · Festival of Colors' },
+    { md: '03-26', name: 'Good Friday', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday' },
+    { md: '04-07', name: 'Ugadi / Gudi Padwa', type: 'festival', region: 'in_fest', desc: 'Chaitra Navratri & Lunar New Year' },
+    { md: '04-15', name: 'Ram Navami', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday' },
+    { md: '04-19', name: 'Mahavir Jayanti', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday' },
+    { md: '05-17', name: 'Eid-ul-Adha (Bakrid)', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday' },
+    { md: '05-20', name: 'Buddha Purnima', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday' },
+    { md: '06-16', name: 'Muharram', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday' },
+    { md: '07-18', name: 'Guru Purnima', type: 'festival', region: 'in_fest', desc: 'Honoring teachers' },
+    { md: '08-17', name: 'Raksha Bandhan', type: 'festival', region: 'in_fest', desc: 'Sibling celebration' },
+    { md: '08-25', name: 'Krishna Janmashtami', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday' },
+    { md: '09-04', name: 'Ganesh Chaturthi', type: 'festival', region: 'in_fest', desc: 'Welcoming Lord Ganesha' },
+    { md: '09-12', name: 'Onam (Thiruvonam)', type: 'festival', region: 'in_fest', desc: 'Kerala Harvest Festival' },
+    { md: '09-30', name: 'Sharad Navratri Begins', type: 'festival', region: 'in_fest', desc: 'Nine nights of Durga' },
+    { md: '10-09', name: 'Dussehra (Vijayadashami)', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday' },
+    { md: '10-18', name: 'Karwa Chauth', type: 'festival', region: 'in_fest', desc: 'Traditional festival' },
+    { md: '10-27', name: 'Dhanteras', type: 'festival', region: 'in_fest', desc: 'Start of Diwali' },
+    { md: '10-29', name: 'Diwali (Deepavali)', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday · Festival of Lights' },
+    { md: '10-31', name: 'Bhai Dooj', type: 'festival', region: 'in_fest', desc: 'Brother-sister celebration' },
+    { md: '11-04', name: 'Chhath Puja', type: 'festival', region: 'in_fest', desc: 'Dedicated to Surya Dev' },
+    { md: '11-14', name: 'Guru Nanak Jayanti', type: 'holiday', region: 'in_hol', desc: 'Gazetted Holiday' }
+  ]
+};
+
+const HOLIDAY_GROUPS = [
+  { id: 'in_hol',  label: 'India Public Holidays',   sub: 'Gazetted national & bank holidays' },
+  { id: 'in_fest', label: 'Indian Festivals',        sub: 'Diwali, Holi, Navratri, Chhath, etc.' },
+  { id: 'intl',    label: 'International Days',      sub: 'New Year, Yoga Day, Labour Day' },
+  { id: 'us',      label: 'United States Holidays',  sub: '4th of July, Halloween, Veterans Day' },
+  { id: 'uk',      label: 'United Kingdom Holidays', sub: 'Boxing Day & UK Bank Holidays' }
+];
+
+/* ==================== LUNAR / SECONDARY CALENDAR HELPERS ==================== */
+const TITHI_SHORT = ['Prat','Dwit','Trit','Chat','Panch','Shash','Sapt','Asht','Nav','Dash','Ekad','Dwad','Tray','Chatur','Purnima','Prat','Dwit','Trit','Chat','Panch','Shash','Sapt','Asht','Nav','Dash','Ekad','Dwad','Tray','Chatur','Amavasya'];
+const TITHI_FULL = ['Pratipada','Dwitiya','Tritiya','Chaturthi','Panchami','Shashthi','Saptami','Ashtami','Navami','Dashami','Ekadashi','Dwadashi','Trayodashi','Chaturdashi','Purnima','Pratipada','Dwitiya','Tritiya','Chaturthi','Panchami','Shashthi','Saptami','Ashtami','Navami','Dashami','Ekadashi','Dwadashi','Trayodashi','Chaturdashi','Amavasya'];
+
+function getLunarInfo(date) {
+  // Reference New Moon: Jan 11, 2024 11:57 UTC (synodic month = 29.53058867 days)
+  const ref = Date.UTC(2024, 0, 11, 11, 57, 0);
+  const cur = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
+  const synodic = 29.53058867;
+  let age = ((cur - ref) / 86400000) % synodic;
+  if (age < 0) age += synodic;
+  const idx = Math.min(29, Math.floor((age / synodic) * 30));
+  const paksha = idx < 15 ? 'Shukla' : 'Krishna';
+  const moonSym = idx === 14 ? 'Full Moon' : idx === 29 ? 'New Moon' : idx < 14 ? 'Waxing' : 'Waning';
+  return {
+    short: TITHI_SHORT[idx],
+    full: idx === 14 ? 'Purnima (Full Moon)' : idx === 29 ? 'Amavasya (New Moon)' : `${paksha} ${TITHI_FULL[idx]} · ${moonSym}`
+  };
+}
+
+function getOtherCalendarLabel(date, mode) {
+  if (!mode || mode === 'none') return '';
+  if (mode === 'lunar') return getLunarInfo(date).short;
+  try {
+    if (mode === 'indian') {
+      return new Intl.DateTimeFormat('en-IN-u-ca-indian', { day: 'numeric', month: 'short' }).format(date);
+    }
+    if (mode === 'islamic') {
+      return new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', { day: 'numeric', month: 'short' }).format(date);
+    }
+  } catch {}
+  return getLunarInfo(date).short;
+}
+
+function getISOWeek(d) {
+  const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  dt.setUTCDate(dt.getUTCDate() + 4 - (dt.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
+  return Math.ceil((((dt - yearStart) / 86400000) + 1) / 7);
+}
+
+/* ==================== DATE HELPERS ==================== */
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const dateKey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const parseKey = k => new Date(k + 'T00:00:00');
+const same = (a, b) => dateKey(a) === dateKey(b);
+const daysBetween = (a, b) => Math.round((b - a) / 86400000);
+const pretty = d => d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+const monthName = d => d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const catColor = c => (CATEGORIES.find(x => x.id === c) || CATEGORIES[0]).color;
+
+/* ==================== STATE & PREFS ==================== */
+const defaultPrefs = () => ({
+  dark: false,
+  accent: 'violet',
+  timeFormat: '12',
+  weekStart: 0,
+  timeZone: 'Asia/Kolkata',
+  extendedMonth: false,
+  showWeekNum: false,
+  showAlmanac: false,
+  otherCalendar: 'none',
+  globalHolidays: { in_hol: true, in_fest: true, intl: true, us: false, uk: false },
+  accounts: { purple: true, blue: true, green: true, orange: true, pink: true },
+  remindersEnabled: true,
+  defaultReminder: '0',
+  allDayReminderTime: '08:00',
+  importBirthdays: true
+});
+
+const defaultEvents = () => [
+  { id: 101, title: 'Morning Study Session', date: dateKey(today), start: '07:30', end: '09:00', allDay: false, repeat: 'daily', reminder: '10', category: 'blue', notes: 'Core revision & practice.' },
+  { id: 102, title: 'Project Design Review', date: dateKey(today), start: '14:00', end: '15:00', allDay: false, repeat: 'none', reminder: '15', category: 'purple', notes: 'UI & calendar polish.' },
+  { id: 103, title: 'Evening Walk', date: dateKey(today), start: '17:30', end: '18:15', allDay: false, repeat: 'none', reminder: '0', category: 'green', notes: 'Refresh outdoors.' },
+  { id: 104, title: 'Weekly Mock Test', date: dateKey(addDays(today, 2)), start: '10:00', end: '12:00', allDay: false, repeat: 'weekly', reminder: '30', category: 'orange', notes: 'Timed paper.' }
+];
+
+const defaultTasks = () => [
+  { id: 201, title: 'Revise Physics notes', date: dateKey(today), priority: 'high', done: false },
+  { id: 202, title: 'Plan next week schedule', date: dateKey(today), priority: 'medium', done: false },
+  { id: 203, title: 'Organize workspace files', date: dateKey(today), priority: 'low', done: true }
+];
+
+const defaultBirthdays = () => [
+  { id: 301, name: 'Aarav', date: '2005-11-22' }
+];
+
+let savedPrefs = JSON.parse(localStorage.getItem('chronova-prefs-v3') || 'null') || {};
+let prefs = {
+  ...defaultPrefs(),
+  ...savedPrefs,
+  globalHolidays: { ...defaultPrefs().globalHolidays, ...(savedPrefs.globalHolidays || {}) },
+  accounts: { ...defaultPrefs().accounts, ...(savedPrefs.accounts || {}) }
+};
+
+let events = JSON.parse(localStorage.getItem('chronova-events') || 'null') || defaultEvents();
+let tasks = JSON.parse(localStorage.getItem('chronova-tasks') || 'null') || defaultTasks();
+let birthdays = JSON.parse(localStorage.getItem('chronova-birthdays') || 'null') || defaultBirthdays();
+
+let cursor = new Date(today);
+let selected = new Date(today);
+let activePage = 'calendar';
+let view = 'month';
+let rightTab = 'agenda';
+let taskFilter = 'all';
+let holYear = Math.min(2027, Math.max(2025, today.getFullYear()));
+let holTypeFilter = 'all';
+let editingId = null;
+let lastSlideDir = '';
+let calcOffsetDateKey = dateKey(addDays(today, 30));
+
+function persist() {
+  localStorage.setItem('chronova-events', JSON.stringify(events));
+  localStorage.setItem('chronova-tasks', JSON.stringify(tasks));
+  localStorage.setItem('chronova-birthdays', JSON.stringify(birthdays));
+  localStorage.setItem('chronova-prefs-v3', JSON.stringify(prefs));
+}
+
+function formatTime(hhmm) {
+  if (!hhmm) return '';
+  if (prefs.timeFormat === '24') return hhmm;
+  const [h, m] = hhmm.split(':').map(Number);
+  return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+}
+
+function durationMins(start, end) {
+  if (!start || !end) return 60;
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  return Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
+}
+
+/* ==================== HOLIDAY & EVENT RESOLVERS ==================== */
+function getYearHolidays(year) {
+  const raw = [...INDIA_FIXED, ...GLOBAL_EXTRA, ...(YEAR_FESTIVALS[year] || [])];
+  return raw
+    .filter(h => prefs.globalHolidays[h.region])
+    .map(h => ({ ...h, date: `${year}-${h.md}` }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function getHolidaysForDate(dKey) {
+  const y = Number(dKey.split('-')[0]);
+  const md = dKey.slice(5);
+  return [...INDIA_FIXED, ...GLOBAL_EXTRA, ...(YEAR_FESTIVALS[y] || [])]
+    .filter(h => h.md === md && prefs.globalHolidays[h.region])
+    .map(h => ({ ...h, date: dKey }));
+}
+
+function getBirthdaysForDate(dKey) {
+  if (!prefs.importBirthdays) return [];
+  const md = dKey.slice(5);
+  const targetYear = Number(dKey.split('-')[0]);
+  return birthdays
+    .filter(b => b.date.slice(5) === md)
+    .map(b => {
+      const bornYear = Number(b.date.split('-')[0]);
+      const age = targetYear - bornYear;
+      return { ...b, age: age > 0 ? age : null };
+    });
+}
+
+function getEventsForDate(dKey) {
+  const target = parseKey(dKey);
+  return events.filter(e => {
+    if (prefs.accounts[e.category] === false) return false;
+    if (e.date === dKey) return true;
+    if (!e.repeat || e.repeat === 'none') return false;
+    const base = parseKey(e.date);
+    if (target < base) return false;
+    if (e.repeat === 'daily') return true;
+    if (e.repeat === 'weekly') return target.getDay() === base.getDay();
+    if (e.repeat === 'monthly') return target.getDate() === base.getDate();
+    if (e.repeat === 'yearly') return target.getMonth() === base.getMonth() && target.getDate() === base.getDate();
+    return false;
+  }).sort((a, b) => (a.allDay ? -1 : 0) - (b.allDay ? -1 : 0) || (a.start || '').localeCompare(b.start || ''));
+}
+
+/* ==================== SILENT THEME SWITCH WITH RADIAL WAVE ANIMATION ==================== */
+function toggleThemeSmooth(clickEvent) {
+  const nextDark = !prefs.dark;
+  prefs.dark = nextDark;
+  persist();
+
+  const btn = clickEvent && clickEvent.currentTarget ? clickEvent.currentTarget : $('#themeBtn');
+  const rect = btn ? btn.getBoundingClientRect() : { left: innerWidth - 60, top: 24, width: 40, height: 26 };
+  const x = rect.left + rect.width / 2;
+  const y = rect.top + rect.height / 2;
+  const endRadius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+
+  if (document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const transition = document.startViewTransition(() => {
+      applyTheme();
+    });
+    transition.ready.then(() => {
+      document.documentElement.animate(
+        {
+          clipPath: [
+            `circle(0px at ${x}px ${y}px)`,
+            `circle(${endRadius}px at ${x}px ${y}px)`
+          ]
+        },
+        {
+          duration: 520,
+          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          pseudoElement: '::view-transition-new(root)'
+        }
+      );
+    }).catch(() => {});
+  } else {
+    document.body.classList.add('theme-fallback-anim');
+    applyTheme();
+    setTimeout(() => document.body.classList.remove('theme-fallback-anim'), 450);
+  }
+}
+
+function applyTheme() {
+  const t = ACCENTS[prefs.accent] || ACCENTS.violet;
+  const r = document.documentElement.style;
+  r.setProperty('--primary', t.primary);
+  r.setProperty('--primary2', t.primary2);
+  r.setProperty('--primary-soft', t.soft);
+  r.setProperty('--primary-glow', t.glow);
+  r.setProperty('--bg-glow', prefs.dark ? t.soft : t.soft);
+  document.body.classList.toggle('dark', !!prefs.dark);
+  $('#metaThemeColor').setAttribute('content', prefs.dark ? '#0b0c13' : t.primary);
+
+  const swatchHTML = Object.entries(ACCENTS).map(([k, v]) => `
+    <button class="swatch ${prefs.accent === k ? 'active' : ''}" data-accent="${k}" title="${v.name}" style="background:linear-gradient(135deg,${v.primary},${v.primary2})">
+      ${prefs.accent === k ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+    </button>
+  `).join('');
+
+  $('#popoverSwatches').innerHTML = swatchHTML;
+  $('#settingsSwatches').innerHTML = swatchHTML;
+
+  // Instant silent accent change — NO annoying toast popup!
+  $$('[data-accent]').forEach(btn => {
+    btn.onclick = () => {
+      prefs.accent = btn.dataset.accent;
+      persist();
+      applyTheme();
+    };
+  });
+}
+
+/* ==================== MINIMAL TOAST (ONLY FOR CRUD UNDO / BACKUP / ERRORS) ==================== */
+function showToast(title, subtitle = '', type = 'info', onUndo = null) {
+  const stack = $('#toastStack');
+  const dur = onUndo ? 4200 : 2500;
+  const icons = {
+    success: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    danger: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2m-1 0v14H9V6"/></svg>',
+    info: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>'
+  };
+
+  const card = document.createElement('div');
+  card.className = `toast-card type-${type}`;
+  card.innerHTML = `
+    <div class="toast-ico">${icons[type] || icons.info}</div>
+    <div class="toast-body"><b>${esc(title)}</b>${subtitle ? `<small>${esc(subtitle)}</small>` : ''}</div>
+    ${onUndo ? '<button class="toast-undo">Undo</button>' : ''}
+  `;
+
+  if (onUndo) {
+    card.querySelector('.toast-undo').onclick = () => { onUndo(); dismiss(); };
+  }
+
+  function dismiss() {
+    if (card.classList.contains('leaving')) return;
+    card.classList.add('leaving');
+    setTimeout(() => card.remove(), 250);
+  }
+
+  stack.appendChild(card);
+  while (stack.children.length > 2) stack.firstElementChild.remove();
+  setTimeout(dismiss, dur);
+}
+
+function sparkleBurst(x, y) {
+  const colors = [ACCENTS[prefs.accent].primary, '#f59e0b', '#10b981', '#ec4899'];
+  for (let i = 0; i < 12; i++) {
+    const p = document.createElement('div');
+    p.className = 'spark-particle';
+    const angle = (Math.PI * 2 * i) / 12 + (Math.random() - 0.5) * 0.4;
+    const dist = 24 + Math.random() * 38;
+    p.style.left = `${x}px`;
+    p.style.top = `${y}px`;
+    p.style.background = colors[i % colors.length];
+    p.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
+    p.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 700);
+  }
+}
+
+/* ==================== MASTER RENDER ==================== */
+function getNextUpcomingHoliday() {
+  const all = [...getYearHolidays(today.getFullYear()), ...getYearHolidays(today.getFullYear() + 1)];
+  const tKey = dateKey(today);
+  return all.find(h => h.date >= tKey) || all[0];
+}
+
+function getOrderedWeekdays() {
+  const base = [
+    { idx: 0, short: 'SUN', m: 'S' },
+    { idx: 1, short: 'MON', m: 'M' },
+    { idx: 2, short: 'TUE', m: 'T' },
+    { idx: 3, short: 'WED', m: 'W' },
+    { idx: 4, short: 'THU', m: 'T' },
+    { idx: 5, short: 'FRI', m: 'F' },
+    { idx: 6, short: 'SAT', m: 'S' }
+  ];
+  const ws = Number(prefs.weekStart || 0);
+  return [...base.slice(ws), ...base.slice(0, ws)];
+}
+
+function render() {
+  const hr = new Date().getHours();
+  $('#greeting').textContent = hr < 12 ? 'Good Morning' : hr < 18 ? 'Good Afternoon' : 'Good Evening';
+
+  let tzNow = '';
+  try {
+    tzNow = new Intl.DateTimeFormat('en-US', { timeZone: prefs.timeZone, hour: '2-digit', minute: '2-digit', hour12: prefs.timeFormat === '12' }).format(new Date());
+  } catch {}
+  $('#todayLong').textContent = `${pretty(today)}${tzNow ? ' · ' + tzNow : ''}`;
+
+  // Sidebar Next Holiday
+  const nextHol = getNextUpcomingHoliday();
+  if (nextHol) {
+    const d = parseKey(nextHol.date);
+    const diff = daysBetween(today, d);
+    $('#nhCountdown').textContent = diff === 0 ? 'Today!' : diff === 1 ? 'Tomorrow' : `In ${diff} days`;
+    $('#nhName').textContent = nextHol.name;
+    $('#nhDate').textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    $('#nextHolidayCard').onclick = () => jumpToDate(nextHol.date);
+  }
+
+  // Badges
+  const pendingCount = tasks.filter(t => !t.done).length;
+  $('#pendingTaskBadge').textContent = pendingCount;
+  $('#pendingTaskBadge').style.display = pendingCount ? 'inline-block' : 'none';
+  $('#holCountBadge').textContent = getYearHolidays(cursor.getFullYear()).filter(h => h.type !== 'observance').length;
+
+  $('#monthTitle').textContent = monthName(cursor);
+  $('#workspaceGrid').classList.toggle('extended-mode', !!prefs.extendedMonth && view === 'month');
+
+  renderCalendar();
+  renderMini();
+  renderRightPanel();
+  renderAltViews();
+  renderNotifications();
+  syncSettingsUI();
+
+  if (activePage === 'holidays') renderHolidaysPage();
+  if (activePage === 'tasks') renderFullTasks();
+  if (activePage === 'insights') renderInsights();
+}
+
+function renderCalendar() {
+  const ws = Number(prefs.weekStart || 0);
+  const wds = getOrderedWeekdays();
+  const showWk = !!prefs.showWeekNum;
+  const maxChips = prefs.extendedMonth ? 4 : 2;
+  const subMode = prefs.otherCalendar !== 'none' ? prefs.otherCalendar : (prefs.showAlmanac ? 'lunar' : 'none');
+
+  $('#weekdaysHeader').classList.toggle('has-wk', showWk);
+  $('#weekdaysHeader').innerHTML = (showWk ? '<div>WK</div>' : '') + wds.map(w => `<div class="${w.idx === 0 ? 'sun-col' : ''}">${w.short}</div>`).join('');
+
+  const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+  const offset = (first.getDay() - ws + 7) % 7;
+  const start = addDays(first, -offset);
+
+  let html = '';
+  for (let row = 0; row < 6; row++) {
+    const rowStart = addDays(start, row * 7);
+    if (showWk) {
+      html += `<div class="wk-num-cell">${getISOWeek(rowStart)}</div>`;
+    }
+    for (let col = 0; col < 7; col++) {
+      const d = addDays(rowStart, col);
+      const key = dateKey(d);
+      const isSun = d.getDay() === 0;
+      const hols = getHolidaysForDate(key);
+      const bdays = getBirthdaysForDate(key);
+      const dayEvs = getEventsForDate(key);
+      const hasPublicHol = hols.some(h => h.type === 'holiday');
+      const subLabel = getOtherCalendarLabel(d, subMode);
+
+      const chips = [
+        ...hols.map(h => `<div class="event-chip hol-${h.type}" title="${esc(h.name)}">${esc(h.name)}</div>`),
+        ...bdays.map(b => `<div class="event-chip bday" title="${esc(b.name)}'s Birthday">🎂 ${esc(b.name)}</div>`),
+        ...dayEvs.map(e => `<div class="event-chip ${e.category}" data-event-id="${e.id}" title="${esc(e.title)}">${esc(e.title)}</div>`)
+      ];
+
+      const dots = [
+        ...hols.slice(0, 1).map(h => `<span class="day-dot-m" style="background:var(--${h.type})"></span>`),
+        ...bdays.slice(0, 1).map(() => `<span class="day-dot-m" style="background:var(--bday)"></span>`),
+        ...dayEvs.slice(0, 2).map(e => `<span class="day-dot-m" style="background:${catColor(e.category)}"></span>`)
+      ].slice(0, 3).join('');
+
+      html += `
+        <div class="day ${d.getMonth() !== cursor.getMonth() ? 'outside' : ''} ${isSun ? 'sunday' : ''} ${hasPublicHol ? 'is-holiday' : ''} ${same(d, today) ? 'today' : ''} ${same(d, selected) ? 'selected' : ''}" data-date="${key}">
+          <div class="day-num">
+            <span class="day-num-val">${d.getDate()}</span>
+            ${subLabel ? `<span class="day-sub-cal">${esc(subLabel)}</span>` : ''}
+          </div>
+          <div class="day-dots-mobile">${dots}</div>
+          <div class="day-chips">
+            ${chips.slice(0, maxChips).join('')}
+            ${chips.length > maxChips ? `<span class="more-tag">+${chips.length - maxChips}</span>` : ''}
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  const grid = $('#calendarGrid');
+  grid.classList.toggle('has-wk', showWk);
+  grid.classList.remove('slide-next', 'slide-prev');
+  grid.innerHTML = html;
+  if (lastSlideDir) {
+    void grid.offsetWidth;
+    grid.classList.add(lastSlideDir === 'next' ? 'slide-next' : 'slide-prev');
+    lastSlideDir = '';
+  }
+
+  $$('.day').forEach(el => {
+    el.onclick = e => {
+      const chip = e.target.closest('[data-event-id]');
+      if (chip) { editEvent(Number(chip.dataset.eventId)); return; }
+      selected = parseKey(el.dataset.date);
+      if (selected.getMonth() !== cursor.getMonth()) cursor = new Date(selected);
+      render();
+    };
+  });
+}
+
+function renderMini() {
+  const ws = Number(prefs.weekStart || 0);
+  const wds = getOrderedWeekdays();
+  const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+  const offset = (first.getDay() - ws + 7) % 7;
+  const start = addDays(first, -offset);
+
+  $('#miniMonth').textContent = monthName(cursor);
+  let html = wds.map(w => `<span class="${w.idx === 0 ? 'sun-h' : ''}">${w.m}</span>`).join('');
+
+  for (let i = 0; i < 42; i++) {
+    const d = addDays(start, i);
+    const key = dateKey(d);
+    const hasHol = getHolidaysForDate(key).some(h => h.type !== 'observance');
+    const hasEv = getEventsForDate(key).length > 0;
+    html += `<button class="${d.getMonth() !== cursor.getMonth() ? 'outside' : ''} ${d.getDay() === 0 ? 'sun' : ''} ${same(d, today) ? 'today' : ''} ${same(d, selected) ? 'selected' : ''} ${hasHol ? 'has-hol' : ''} ${hasEv ? 'has-ev' : ''}" data-mini="${key}">${d.getDate()}</button>`;
+  }
+
+  $('#miniGrid').innerHTML = html;
+  $$('[data-mini]').forEach(b => {
+    b.onclick = () => { selected = parseKey(b.dataset.mini); cursor = new Date(selected); render(); };
+  });
+}
+
+function renderRightPanel() {
+  const selKey = dateKey(selected);
+  const hols = getHolidaysForDate(selKey);
+  const bdays = getBirthdaysForDate(selKey);
+  const isSun = selected.getDay() === 0;
+  const is2nd4thSat = selected.getDay() === 6 && (Math.ceil(selected.getDate() / 7) === 2 || Math.ceil(selected.getDate() / 7) === 4);
+
+  $('#selectedDayTitle').textContent = selected.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+  const wkInfo = prefs.showWeekNum ? ` · W${getISOWeek(selected)}` : '';
+  const status = hols.some(h => h.type === 'holiday') ? 'Public Holiday'
+               : isSun ? 'Sunday · Weekly Off'
+               : is2nd4thSat ? '2nd/4th Sat · Bank Holiday'
+               : hols.length ? 'Festival / Special Day'
+               : 'Regular Day';
+  $('#selectedDaySub').textContent = `${same(selected, today) ? 'Today' : selected.getFullYear()} · ${status}${wkInfo}`;
+
+  // Lunar / Secondary Calendar Info Pill
+  const almanacParts = [];
+  if (prefs.showAlmanac) almanacParts.push(getLunarInfo(selected).full);
+  if (prefs.otherCalendar !== 'none' && prefs.otherCalendar !== 'lunar') {
+    almanacParts.push(getOtherCalendarLabel(selected, prefs.otherCalendar));
+  }
+  $('#dayAlmanacSlot').innerHTML = almanacParts.length
+    ? `<div class="day-almanac-pill"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>${esc(almanacParts.join(' · '))}</div>`
+    : '';
+
+  // Holiday + Birthday Banners
+  $('#dayHolidayBanners').innerHTML = [
+    ...hols.map(h => `
+      <div class="hol-banner ${h.type}">
+        <div class="hol-banner-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.1 1 5.9L12 16.4 6.8 19.2l1-5.9-4.3-4.1 5.9-.9L12 3z"/></svg></div>
+        <div><b>${esc(h.name)}</b><small>${esc(h.desc)}</small></div>
+      </div>`),
+    ...bdays.map(b => `
+      <div class="hol-banner bday">
+        <div class="hol-banner-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1M12 7V4"/></svg></div>
+        <div><b>${esc(b.name)}'s Birthday</b><small>${b.age ? `Turning ${b.age} years old` : 'Birthday celebration'}</small></div>
+      </div>`)
+  ].join('');
+
+  // Focus Ring
+  const dayTasks = tasks.filter(t => !t.date || t.date === selKey);
+  const doneCount = dayTasks.filter(t => t.done).length;
+  const pct = dayTasks.length ? Math.round((doneCount / dayTasks.length) * 100) : 0;
+  const circ = 2 * Math.PI * 17;
+  $('#focusRing').style.strokeDashoffset = circ - (circ * pct) / 100;
+  $('#focusPct').textContent = `${pct}%`;
+
+  const pendingDayTasks = dayTasks.filter(t => !t.done).length;
+  $('#dayTaskCount').textContent = pendingDayTasks ? `(${pendingDayTasks})` : '';
+  $('#inspectorAddText').textContent = rightTab === 'agenda' ? 'Event' : 'Task';
+  $$('#rightTabSwitch button').forEach(b => b.classList.toggle('active', b.dataset.rtab === rightTab));
+
+  if (rightTab === 'agenda') {
+    const list = getEventsForDate(selKey);
+    if (!list.length) {
+      $('#inspectorBody').innerHTML = `
+        <div class="empty">
+          <div class="empty-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+          <b>No events scheduled</b>
+          <span>${hols.length ? 'Enjoy the occasion or add a plan.' : 'Tap + Event to plan your day.'}</span>
+        </div>`;
+    } else {
+      $('#inspectorBody').innerHTML = list.map((e, i) => `
+        <div class="agenda-item" style="animation-delay:${i * 35}ms">
+          <div class="agenda-time">${e.allDay ? 'All day' : formatTime(e.start)}</div>
+          <div class="agenda-bar" style="background:${catColor(e.category)}"></div>
+          <div class="agenda-info">
+            <b>${esc(e.title)}</b>
+            <small>${e.allDay ? 'All-day event' : `${formatTime(e.start)} – ${formatTime(e.end)}`}${e.repeat && e.repeat !== 'none' ? ` · ${e.repeat}` : ''}${e.notes ? ' · ' + esc(e.notes) : ''}</small>
+            <div class="agenda-actions">
+              <button style="color:var(--primary)" onclick="editEvent(${e.id})">Edit</button>
+              <button style="color:var(--danger)" onclick="deleteEvent(${e.id})">Delete</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+  } else {
+    $('#inspectorBody').innerHTML = dayTasks.length
+      ? dayTasks.map(t => taskRowHTML(t, false)).join('')
+      : '<div class="empty"><div class="empty-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg></div><b>No tasks for this day</b><span>Tap + Task to stay organized.</span></div>';
+  }
+}
+
+function taskRowHTML(t, showDate = false) {
+  return `
+    <div class="task-row ${t.done ? 'done' : ''}">
+      <button class="check-btn" onclick="toggleTask(${t.id}, event)" aria-label="Toggle task">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+      <div class="task-text" onclick="toggleTask(${t.id}, event)">
+        <span>${esc(t.title)}</span>
+        ${showDate && t.date ? `<small>Due ${t.date}</small>` : ''}
+      </div>
+      <span class="prio-dot prio-${t.priority || 'medium'}" title="Priority: ${t.priority || 'medium'}"></span>
+      <button class="del-icon-btn" onclick="removeTask(${t.id})" aria-label="Delete task">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+  `;
+}
+
+function renderAltViews() {
+  const ws = Number(prefs.weekStart || 0);
+  const diffToStart = (selected.getDay() - ws + 7) % 7;
+  const weekStart = addDays(selected, -diffToStart);
+  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const hours = Array.from({ length: 17 }, (_, i) => i + 6);
+  const now = new Date();
+  const nowHr = now.getHours();
+  const nowMinPct = (now.getMinutes() / 60) * 100;
+
+  $('#weekView').innerHTML = `
+    <div class="week-head-row">
+      <div style="font-size:10px;font-weight:800;color:var(--muted);display:grid;place-items:center">${prefs.showWeekNum ? 'W' + getISOWeek(weekStart) : ''}</div>
+      ${days.map(d => {
+        const k = dateKey(d);
+        const hol = getHolidaysForDate(k)[0];
+        return `
+          <div class="week-day ${same(d, selected) ? 'current' : ''}" data-wday="${k}" title="${hol ? esc(hol.name) : ''}">
+            <small style="${d.getDay() === 0 ? 'color:var(--sunday)' : ''}">${d.toLocaleDateString('en-US', { weekday: 'short' })}</small>
+            <b>${d.getDate()}</b>
+            ${hol ? `<div style="width:5px;height:5px;border-radius:50%;background:var(--${hol.type});margin:2px auto 0"></div>` : ''}
+          </div>`;
+      }).join('')}
+    </div>
+    <div class="week-body scroll-area">
+      ${hours.map(hr => `
+        <div class="week-row">
+          <div class="week-time">${formatTime(String(hr).padStart(2, '0') + ':00')}</div>
+          ${days.map(d => {
+            const k = dateKey(d);
+            const slotEvs = getEventsForDate(k).filter(e => !e.allDay && parseInt((e.start || '09:00').split(':')[0], 10) === hr);
+            return `<div class="week-cell" data-slot-date="${k}" data-slot-hr="${hr}">${slotEvs.map(e => `<div class="event-chip ${e.category}" data-event-id="${e.id}">${esc(e.title)}</div>`).join('')}</div>`;
+          }).join('')}
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  $$('[data-wday]').forEach(el => el.onclick = () => { selected = parseKey(el.dataset.wday); cursor = new Date(selected); render(); });
+  $$('.week-cell').forEach(el => {
+    el.onclick = e => {
+      const chip = e.target.closest('[data-event-id]');
+      if (chip) { editEvent(Number(chip.dataset.eventId)); return; }
+      selected = parseKey(el.dataset.slotDate);
+      openEvent(String(el.dataset.slotHr).padStart(2, '0') + ':00');
+    };
+  });
+
+  const selKey = dateKey(selected);
+  const selHols = getHolidaysForDate(selKey);
+  const selAllDay = getEventsForDate(selKey).filter(e => e.allDay);
+  $('#dayView').innerHTML = `
+    <div class="day-head">
+      <div>
+        <h3>${pretty(selected)}</h3>
+        <small style="color:var(--muted)">${selHols.length ? selHols.map(h => h.name).join(' · ') : 'Tap any hour slot to add an event'}</small>
+      </div>
+      <button class="secondary-btn" onclick="openEvent()">+ Add</button>
+    </div>
+    ${selAllDay.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;padding:7px 0;border-bottom:1px solid var(--line)">${selAllDay.map(e => `<div class="event-chip ${e.category}" data-event-id="${e.id}" style="cursor:pointer">All Day · ${esc(e.title)}</div>`).join('')}</div>` : ''}
+    <div class="scroll-area" style="flex:1;min-height:0">
+      ${hours.map(hr => {
+        const slotEvs = getEventsForDate(selKey).filter(e => !e.allDay && parseInt((e.start || '09:00').split(':')[0], 10) === hr);
+        const showNow = same(selected, today) && hr === nowHr;
+        return `
+          <div class="time-row">
+            <span>${formatTime(String(hr).padStart(2, '0') + ':00')}</span>
+            <div class="time-slot" data-day-hr="${hr}">
+              ${showNow ? `<div class="now-line" style="top:${nowMinPct}%"></div>` : ''}
+              ${slotEvs.map(e => `<div class="event-chip ${e.category}" data-event-id="${e.id}" style="padding:6px 10px;font-size:11.5px"><b>${esc(e.title)}</b> · ${formatTime(e.start)} – ${formatTime(e.end)}</div>`).join('')}
+            </div>
+          </div>`;
+      }).join('')}
+    </div>
+  `;
+
+  $$('#dayView [data-event-id]').forEach(ch => ch.onclick = e => { e.stopPropagation(); editEvent(Number(ch.dataset.eventId)); });
+  $$('.time-slot').forEach(el => {
+    el.onclick = e => {
+      const chip = e.target.closest('[data-event-id]');
+      if (chip) { editEvent(Number(chip.dataset.eventId)); return; }
+      openEvent(String(el.dataset.dayHr).padStart(2, '0') + ':00');
+    };
+  });
+
+  $('#monthView').style.display = view === 'month' ? 'flex' : 'none';
+  $('#weekView').style.display = view === 'week' ? 'flex' : 'none';
+  $('#dayView').style.display = view === 'day' ? 'flex' : 'none';
+  $('#calendarCard').classList.toggle('is-alt-view', view !== 'month');
+  $('#rightPanel').classList.toggle('hide-on-alt', view !== 'month');
+  $$('[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+}
+
+function renderHolidaysPage() {
+  $('#holidaysHeading').textContent = `Holidays & Festivals ${holYear}`;
+  $$('[data-hyear]').forEach(b => b.classList.toggle('active', Number(b.dataset.hyear) === holYear));
+  $$('[data-htype]').forEach(b => b.classList.toggle('active', b.dataset.htype === holTypeFilter));
+
+  let list = getYearHolidays(holYear);
+  if (holTypeFilter !== 'all') list = list.filter(h => h.type === holTypeFilter);
+
+  $('#holidaysList').innerHTML = list.length ? list.map(h => {
+    const d = parseKey(h.date);
+    const diff = daysBetween(today, d);
+    const pillText = diff === 0 ? 'Today' : diff > 0 ? `In ${diff}d` : 'Passed';
+    return `
+      <div class="card holiday-card" data-jump-date="${h.date}">
+        <div class="hol-date-badge ${h.type}">
+          <small>${d.toLocaleDateString('en-US', { month: 'short' })}</small>
+          <b>${d.getDate()}</b>
+        </div>
+        <div class="hol-info">
+          <b>${esc(h.name)}</b>
+          <small>${d.toLocaleDateString('en-US', { weekday: 'short' })} · ${h.type === 'holiday' ? 'Public Holiday' : h.type === 'festival' ? 'Festival' : 'Observance'}</small>
+        </div>
+        <span class="countdown-pill ${diff >= 0 && diff <= 14 ? 'soon' : ''}">${pillText}</span>
+      </div>`;
+  }).join('') : '<div class="empty"><b>No holidays enabled</b><span>Enable regions in Settings → Global holidays.</span></div>';
+}
+
+function renderFullTasks() {
+  let list = [...tasks];
+  if (taskFilter === 'pending') list = list.filter(t => !t.done);
+  if (taskFilter === 'done') list = list.filter(t => t.done);
+  list.sort((a, b) => Number(a.done) - Number(b.done));
+
+  $('#fullTaskList').innerHTML = list.length
+    ? list.map(t => taskRowHTML(t, true)).join('')
+    : '<div class="empty"><div class="empty-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg></div><b>All clear!</b><span>No tasks match this filter.</span></div>';
+}
+
+function renderInsights() {
+  const totalHrs = (events.reduce((a, e) => a + (e.allDay ? 0 : durationMins(e.start, e.end)), 0) / 60).toFixed(1);
+  const doneTasks = tasks.filter(t => t.done).length;
+  const rate = tasks.length ? Math.round((doneTasks / tasks.length) * 100) : 0;
+  const yearHols = getYearHolidays(today.getFullYear()).filter(h => h.type === 'holiday').length;
+
+  $('#insightStats').innerHTML = `
+    <div class="card stat-card"><div class="stat-ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div><div><small>Events</small><strong>${events.length}</strong></div></div>
+    <div class="card stat-card"><div class="stat-ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><small>Planned Hours</small><strong>${totalHrs}h</strong></div></div>
+    <div class="card stat-card"><div class="stat-ico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><polyline points="20 6 9 17 4 12"/></svg></div><div><small>Task Focus</small><strong>${rate}%</strong></div></div>
+    <div class="card stat-card"><div class="stat-ico" style="background:var(--holiday-bg);color:var(--holiday)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.1 1 5.9L12 16.4 6.8 19.2l1-5.9-4.3-4.1 5.9-.9L12 3z"/></svg></div><div><small>${today.getFullYear()} Holidays</small><strong>${yearHols}</strong></div></div>
+  `;
+
+  const weekStart = addDays(today, -today.getDay());
+  const counts = Array.from({ length: 7 }, (_, i) => {
+    const d = addDays(weekStart, i);
+    return { label: d.toLocaleDateString('en-US', { weekday: 'short' }), count: getEventsForDate(dateKey(d)).length };
+  });
+  const maxC = Math.max(1, ...counts.map(x => x.count));
+  $('#weekBarChart').innerHTML = counts.map(c => `
+    <div class="bar-col">
+      <small style="font-size:10.5px;font-weight:800;color:var(--primary)">${c.count}</small>
+      <div class="bar-track"><div class="bar-fill" style="height:${Math.max(8, (c.count / maxC) * 100)}%"></div></div>
+      <span>${c.label}</span>
+    </div>
+  `).join('');
+
+  const catCounts = CATEGORIES.map(c => ({ ...c, count: events.filter(e => e.category === c.id).length }));
+  const sum = catCounts.reduce((a, b) => a + b.count, 0) || 1;
+  const r = 46, circ = 2 * Math.PI * r;
+  let off = 0;
+  const segs = catCounts.map(c => {
+    const len = (c.count / sum) * circ;
+    const s = `<circle cx="62" cy="62" r="${r}" fill="none" stroke="${c.color}" stroke-width="15" stroke-dasharray="${len} ${circ - len}" stroke-dashoffset="${-off}" />`;
+    off += len;
+    return s;
+  }).join('');
+
+  $('#categoryDonut').innerHTML = `
+    <svg width="124" height="124" viewBox="0 0 124 124" style="transform:rotate(-90deg)">
+      <circle cx="62" cy="62" r="${r}" fill="none" stroke="var(--panel2)" stroke-width="15"/>
+      ${events.length ? segs : ''}
+    </svg>
+    <div class="legend">
+      ${catCounts.map(c => `<div class="legend-item"><span class="legend-left"><span class="legend-dot" style="background:${c.color}"></span>${c.label}</span><span style="color:var(--muted)">${c.count}</span></div>`).join('')}
+    </div>
+  `;
+}
+
+function renderNotifications() {
+  const todayEv = getEventsForDate(dateKey(today));
+  const upcomingHols = [...getYearHolidays(today.getFullYear()), ...getYearHolidays(today.getFullYear() + 1)]
+    .filter(h => h.date >= dateKey(today) && daysBetween(today, parseKey(h.date)) <= 20)
+    .slice(0, 3);
+  const total = todayEv.length + upcomingHols.length;
+  $('#notifCount').textContent = total;
+  $('#notifDot').classList.toggle('show', prefs.remindersEnabled && total > 0);
+
+  if (!total) {
+    $('#notifList').innerHTML = '<div class="empty" style="padding:14px"><b>All caught up</b><span>No reminders right now.</span></div>';
+    return;
+  }
+
+  $('#notifList').innerHTML = [
+    ...upcomingHols.map(h => {
+      const diff = daysBetween(today, parseKey(h.date));
+      return `<div style="padding:8px 4px;border-bottom:1px solid var(--line);font-size:12px;cursor:pointer" data-jump-date="${h.date}"><b style="color:var(--${h.type})">${esc(h.name)}</b><div style="color:var(--muted);font-size:11px">${diff === 0 ? 'Today' : `In ${diff} day(s)`} · ${h.date}</div></div>`;
+    }),
+    ...todayEv.slice(0, 4).map(e => `<div style="padding:8px 4px;border-bottom:1px solid var(--line);font-size:12px"><b>${esc(e.title)}</b><div style="color:var(--muted);font-size:11px">${e.allDay ? `All day · Remind ${formatTime(prefs.allDayReminderTime)}` : `Today at ${formatTime(e.start)}`}</div></div>`)
+  ].join('');
+}
+
+/* ==================== SETTINGS SYNC & SUB-MODALS ==================== */
+function setSwitch(sel, val) {
+  const el = $(sel);
+  if (!el) return;
+  el.classList.toggle('on', !!val);
+  el.setAttribute('aria-checked', String(!!val));
+}
+
+function syncSettingsUI() {
+  const activeAccs = Object.values(prefs.accounts).filter(Boolean).length;
+  $('#accountsSummary').textContent = `${activeAccs} of ${CATEGORIES.length} calendars visible`;
+
+  $('#setWeekStart').value = String(prefs.weekStart);
+  const tzObj = TIMEZONES.find(t => t.id === prefs.timeZone) || TIMEZONES[0];
+  $('#tzLabel').textContent = tzObj.label;
+
+  setSwitch('#toggleExtendedMonth', prefs.extendedMonth);
+  setSwitch('#toggleWeekNum', prefs.showWeekNum);
+  setSwitch('#toggleAlmanac', prefs.showAlmanac);
+  $('#setOtherCal').value = prefs.otherCalendar;
+
+  const activeRegions = HOLIDAY_GROUPS.filter(g => prefs.globalHolidays[g.id]).map(g => g.label.split(' ')[0]);
+  $('#globalHolSummary').textContent = activeRegions.length ? activeRegions.join(', ') : 'None selected';
+
+  setSwitch('#toggleReminders', prefs.remindersEnabled);
+  $('#setDefReminder').value = String(prefs.defaultReminder);
+  $('#setAllDayTime').value = prefs.allDayReminderTime;
+  setSwitch('#toggleBirthdays', prefs.importBirthdays);
+  $('#bdayCountSummary').textContent = `${birthdays.length} saved birthday(s)`;
+  setSwitch('#toggle24h', prefs.timeFormat === '24');
+}
+
+function openAccountsModal() {
+  $('#accountsToggleList').innerHTML = CATEGORIES.map(c => `
+    <div class="s-row">
+      <div class="s-row-info" style="display:flex;align-items:center;gap:10px">
+        <span style="width:12px;height:12px;border-radius:50%;background:${c.color};flex-shrink:0"></span>
+        <b>${c.label}</b>
+      </div>
+      <button class="ios-switch ${prefs.accounts[c.id] !== false ? 'on' : ''}" data-acc-toggle="${c.id}"></button>
+    </div>
+  `).join('');
+  $$('[data-acc-toggle]').forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.dataset.accToggle;
+      prefs.accounts[id] = prefs.accounts[id] === false;
+      persist();
+      btn.classList.toggle('on', prefs.accounts[id]);
+      render();
+    };
+  });
+  $('#accountsModal').classList.add('show');
+}
+
+function openGlobalHolModal() {
+  $('#globalHolToggleList').innerHTML = HOLIDAY_GROUPS.map(g => `
+    <div class="s-row">
+      <div class="s-row-info"><b>${g.label}</b><small>${g.sub}</small></div>
+      <button class="ios-switch ${prefs.globalHolidays[g.id] ? 'on' : ''}" data-gh-toggle="${g.id}"></button>
+    </div>
+  `).join('');
+  $$('[data-gh-toggle]').forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.dataset.ghToggle;
+      prefs.globalHolidays[id] = !prefs.globalHolidays[id];
+      persist();
+      btn.classList.toggle('on', prefs.globalHolidays[id]);
+      render();
+    };
+  });
+  $('#globalHolModal').classList.add('show');
+}
+
+function openTzModal() {
+  $('#tzList').innerHTML = TIMEZONES.map(tz => `
+    <button class="s-row clickable" data-pick-tz="${tz.id}">
+      <div class="s-row-info"><b>${tz.label}</b><small>${tz.id}</small></div>
+      <div class="s-row-right" style="color:var(--primary)">${prefs.timeZone === tz.id ? '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</div>
+    </button>
+  `).join('');
+  $$('[data-pick-tz]').forEach(btn => {
+    btn.onclick = () => {
+      prefs.timeZone = btn.dataset.pickTz;
+      persist();
+      $('#tzModal').classList.remove('show');
+      render();
+    };
+  });
+  $('#tzModal').classList.add('show');
+}
+
+function renderBirthdaysModal() {
+  $('#bdayManageList').innerHTML = birthdays.length
+    ? birthdays.map(b => `
+      <div class="task-row">
+        <div class="task-text"><span>🎂 ${esc(b.name)}</span><small>${b.date}</small></div>
+        <button class="del-icon-btn" onclick="deleteBirthday(${b.id})" aria-label="Remove birthday"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>`).join('')
+    : '<div class="empty" style="padding:14px"><b>No birthdays saved</b><span>Add one above to see it every year.</span></div>';
+}
+
+window.deleteBirthday = id => {
+  birthdays = birthdays.filter(b => b.id !== id);
+  persist();
+  renderBirthdaysModal();
+  render();
+};
+
+function openAboutModal() {
+  $('#aboutStats').innerHTML = `
+    <div class="calc-meta-item"><b>${events.length}</b><span>Events</span></div>
+    <div class="calc-meta-item"><b>${tasks.length}</b><span>Tasks</span></div>
+    <div class="calc-meta-item"><b>${birthdays.length}</b><span>Birthdays</span></div>
+  `;
+  $('#aboutModal').classList.add('show');
+}
+
+/* ==================== DATE CALCULATOR (FROM SCREENSHOT 2!) ==================== */
+function openCalcModal() {
+  $('#calcStart').value = dateKey(selected);
+  $('#calcEnd').value = dateKey(addDays(selected, 30));
+  $('#calcBase').value = dateKey(selected);
+  computeCalcDiff();
+  computeCalcOffset();
+  $('#calcModal').classList.add('show');
+}
+
+function computeCalcDiff() {
+  const sVal = $('#calcStart').value;
+  const eVal = $('#calcEnd').value;
+  if (!sVal || !eVal) return;
+  let a = parseKey(sVal), b = parseKey(eVal);
+  const reverse = a > b;
+  if (reverse) [a, b] = [b, a];
+
+  const totalDays = daysBetween(a, b);
+  const weeks = Math.floor(totalDays / 7);
+  const remDays = totalDays % 7;
+
+  // Exact Y/M/D breakdown
+  let yrs = b.getFullYear() - a.getFullYear();
+  let mos = b.getMonth() - a.getMonth();
+  let dys = b.getDate() - a.getDate();
+  if (dys < 0) {
+    mos -= 1;
+    dys += new Date(b.getFullYear(), b.getMonth(), 0).getDate();
+  }
+  if (mos < 0) { yrs -= 1; mos += 12; }
+
+  // Count Sundays
+  let sundays = 0;
+  for (let i = 0; i <= Math.min(totalDays, 3660); i++) {
+    if (addDays(a, i).getDay() === 0) sundays++;
+  }
+
+  const parts = [];
+  if (yrs) parts.push(`${yrs} yr`);
+  if (mos) parts.push(`${mos} mo`);
+  parts.push(`${dys} day${dys === 1 ? '' : 's'}`);
+
+  $('#calcDiffResult').innerHTML = `
+    <strong>${totalDays} Day${totalDays === 1 ? '' : 's'}</strong>
+    <small>${parts.join(', ')}${reverse ? ' (past)' : ''}</small>
+    <div class="calc-meta-grid">
+      <div class="calc-meta-item"><b>${weeks}w ${remDays}d</b><span>Weeks</span></div>
+      <div class="calc-meta-item"><b>${(totalDays * 24).toLocaleString()}</b><span>Hours</span></div>
+      <div class="calc-meta-item"><b>${totalDays <= 3660 ? sundays : '—'}</b><span>Sundays</span></div>
+    </div>
+  `;
+}
+
+function computeCalcOffset() {
+  const bVal = $('#calcBase').value;
+  if (!bVal) return;
+  const base = parseKey(bVal);
+  const dir = Number($('#calcDir').value);
+  const amt = Math.max(0, parseInt($('#calcAmount').value || '0', 10)) * dir;
+  const unit = $('#calcUnit').value;
+  let target = new Date(base);
+
+  if (unit === 'days') target.setDate(target.getDate() + amt);
+  else if (unit === 'weeks') target.setDate(target.getDate() + amt * 7);
+  else if (unit === 'months') target.setMonth(target.getMonth() + amt);
+  else if (unit === 'years') target.setFullYear(target.getFullYear() + amt);
+
+  calcOffsetDateKey = dateKey(target);
+  const hols = getHolidaysForDate(calcOffsetDateKey);
+  $('#calcOffsetResult').innerHTML = `
+    <strong>${target.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</strong>
+    <small>${target.toLocaleDateString('en-US', { weekday: 'long' })} · Week ${getISOWeek(target)}${hols.length ? ' · ' + esc(hols[0].name) : ''}</small>
+  `;
+}
+
+/* ==================== CRUD HANDLERS ==================== */
+function renderCatPills(activeCat) {
+  $('#eventCategory').value = activeCat;
+  $('#catPills').innerHTML = CATEGORIES.map(c => `
+    <button type="button" class="cat-pill ${c.id === activeCat ? 'active' : ''}" data-cat="${c.id}">
+      <span class="dot" style="background:${c.color}"></span>${c.label}
+    </button>
+  `).join('');
+  $$('.cat-pill').forEach(b => b.onclick = () => renderCatPills(b.dataset.cat));
+}
+
+function setAllDayUI(isAllDay) {
+  setSwitch('#eventAllDaySwitch', isAllDay);
+  $('#allDayLabel').textContent = isAllDay ? 'On' : 'Off';
+  $('#startTimeField').style.display = isAllDay ? 'none' : 'grid';
+  $('#endTimeField').style.display = isAllDay ? 'none' : 'grid';
+  $('#eventStart').required = !isAllDay;
+  $('#eventEnd').required = !isAllDay;
+}
+
+function openEvent(prefillStart = '09:00') {
+  editingId = null;
+  $('#modalTitle').textContent = 'Create event';
+  $('#eventForm').reset();
+  $('#eventDate').value = dateKey(selected);
+  $('#eventStart').value = prefillStart;
+  const endHr = Math.min(23, parseInt(prefillStart.split(':')[0], 10) + 1);
+  $('#eventEnd').value = `${String(endHr).padStart(2, '0')}:00`;
+  $('#eventRepeat').value = 'none';
+  $('#eventReminder').value = String(prefs.defaultReminder);
+  $('#modalDeleteBtn').style.display = 'none';
+  setAllDayUI(false);
+  renderCatPills('purple');
+  $('#eventModal').classList.add('show');
+  setTimeout(() => $('#eventName').focus(), 80);
+}
+
+window.editEvent = id => {
+  const e = events.find(x => x.id === id);
+  if (!e) return;
+  editingId = id;
+  $('#modalTitle').textContent = 'Edit event';
+  $('#eventName').value = e.title;
+  $('#eventDate').value = e.date;
+  $('#eventStart').value = e.start || '09:00';
+  $('#eventEnd').value = e.end || '10:00';
+  $('#eventRepeat').value = e.repeat || 'none';
+  $('#eventReminder').value = String(e.reminder ?? prefs.defaultReminder);
+  $('#eventNotes').value = e.notes || '';
+  $('#modalDeleteBtn').style.display = 'inline-flex';
+  setAllDayUI(!!e.allDay);
+  renderCatPills(e.category);
+  $('#eventModal').classList.add('show');
+};
+
+window.deleteEvent = id => {
+  const snap = [...events];
+  const target = events.find(e => e.id === id);
+  if (!target) return;
+  events = events.filter(e => e.id !== id);
+  persist();
+  $('#eventModal').classList.remove('show');
+  render();
+  showToast('Event deleted', target.title, 'danger', () => {
+    events = snap;
+    persist();
+    render();
+  });
+};
+
+window.toggleTask = (id, ev) => {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  t.done = !t.done;
+  persist();
+  render();
+  if (t.done && ev && ev.clientX) sparkleBurst(ev.clientX, ev.clientY);
+};
+
+window.removeTask = id => {
+  const snap = [...tasks];
+  const target = tasks.find(t => t.id === id);
+  if (!target) return;
+  tasks = tasks.filter(t => t.id !== id);
+  persist();
+  render();
+  showToast('Task removed', target.title, 'danger', () => {
+    tasks = snap;
+    persist();
+    render();
+  });
+};
+
+function jumpToDate(dKey) {
+  closeAllOverlays();
+  selected = parseKey(dKey);
+  cursor = new Date(selected);
+  switchPage('calendar');
+}
+
+function switchPage(page) {
+  activePage = page;
+  $$('[data-page]').forEach(b => b.classList.toggle('active', b.dataset.page === page));
+  $$('.page-view').forEach(v => v.classList.remove('active'));
+  const map = { calendar: '#pageCalendar', holidays: '#pageHolidays', tasks: '#pageTasks', insights: '#pageInsights', settings: '#pageSettings' };
+  $(map[page] || '#pageCalendar').classList.add('active');
+  render();
+}
+
+function changeMonth(n) {
+  lastSlideDir = n > 0 ? 'next' : 'prev';
+  cursor.setMonth(cursor.getMonth() + n);
+  const maxD = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
+  selected = new Date(cursor.getFullYear(), cursor.getMonth(), Math.min(selected.getDate(), maxD));
+  render();
+}
+
+function closeAllOverlays() {
+  $$('.modal-backdrop').forEach(m => m.classList.remove('show'));
+  $$('.popover').forEach(p => p.classList.remove('show'));
+}
+
+/* ==================== SEARCH ==================== */
+function openSearch() {
+  closeAllOverlays();
+  $('#searchModal').classList.add('show');
+  $('#searchInput').value = '';
+  runSearch('');
+  setTimeout(() => $('#searchInput').focus(), 80);
+}
+
+function runSearch(q) {
+  const term = q.trim().toLowerCase();
+  const holMatches = [...getYearHolidays(2025), ...getYearHolidays(2026), ...getYearHolidays(2027)]
+    .filter(h => !term || h.name.toLowerCase().includes(term) || h.desc.toLowerCase().includes(term));
+  const evMatches = events.filter(e => !term || e.title.toLowerCase().includes(term) || (e.notes || '').toLowerCase().includes(term));
+  const bdayMatches = birthdays.filter(b => !term || b.name.toLowerCase().includes(term));
+  const taskMatches = tasks.filter(t => !term || t.title.toLowerCase().includes(term));
+
+  if (!holMatches.length && !evMatches.length && !bdayMatches.length && !taskMatches.length) {
+    $('#searchResults').innerHTML = '<div class="empty" style="padding:18px"><b>No matches found</b><span>Try "Diwali", "Holi", or an event title.</span></div>';
+    return;
+  }
+
+  $('#searchResults').innerHTML = [
+    ...holMatches.slice(0, 5).map(h => `
+      <button class="search-item" data-jump-date="${h.date}">
+        <div><b>${esc(h.name)}</b><small>${h.type === 'holiday' ? 'Holiday' : 'Festival'} · ${h.date}</small></div>
+        <span class="prio-dot" style="background:var(--${h.type})"></span>
+      </button>`),
+    ...bdayMatches.slice(0, 3).map(b => `
+      <button class="search-item" data-jump-date="${today.getFullYear()}-${b.date.slice(5)}">
+        <div><b>🎂 ${esc(b.name)}'s Birthday</b><small>Annual · ${b.date}</small></div>
+        <span class="prio-dot" style="background:var(--bday)"></span>
+      </button>`),
+    ...evMatches.slice(0, 5).map(e => `
+      <button class="search-item" data-jump-date="${e.date}">
+        <div><b>${esc(e.title)}</b><small>Event · ${e.date} ${e.allDay ? 'All day' : formatTime(e.start)}</small></div>
+        <span class="prio-dot" style="background:${catColor(e.category)}"></span>
+      </button>`),
+    ...taskMatches.slice(0, 4).map(t => `
+      <button class="search-item" onclick="closeAllOverlays();switchPage('tasks')">
+        <div><b>${esc(t.title)}</b><small>Task · ${t.done ? 'Completed' : 'Pending'}</small></div>
+        <span class="prio-dot prio-${t.priority || 'medium'}"></span>
+      </button>`)
+  ].join('');
+}
+
+/* ==================== WIRE ALL LISTENERS ==================== */
+$('#themeBtn').onclick = e => toggleThemeSmooth(e);
+$('#settingsThemeToggle').onclick = e => toggleThemeSmooth(e);
+
+function togglePopover(id, e) {
+  e.stopPropagation();
+  const wasOpen = $(id).classList.contains('show');
+  $$('.popover').forEach(p => p.classList.remove('show'));
+  if (!wasOpen) $(id).classList.add('show');
+}
+
+$('#paletteBtn').onclick = e => togglePopover('#palettePopover', e);
+$('#notifBtn').onclick = e => togglePopover('#notifPopover', e);
+$('#moreMenuBtn').onclick = e => togglePopover('#moreMenuPopover', e);
+
+/* 3-Dot Overflow Menu Items */
+$('#menuSearch').onclick = openSearch;
+$('#menuJump').onclick = () => {
+  closeAllOverlays();
+  $('#jumpDateInput').value = dateKey(selected);
+  $('#jumpModal').classList.add('show');
+};
+$('#menuCalc').onclick = () => { closeAllOverlays(); openCalcModal(); };
+$('#menuSettings').onclick = () => { closeAllOverlays(); switchPage('settings'); };
+
+/* Clicking Month Title also opens Jump to Date */
+$('#monthTitle').onclick = () => {
+  $('#jumpDateInput').value = dateKey(selected);
+  $('#jumpModal').classList.add('show');
+};
+
+/* Jump Form & Quick Jumps */
+$('#jumpForm').onsubmit = e => {
+  e.preventDefault();
+  if ($('#jumpDateInput').value) jumpToDate($('#jumpDateInput').value);
+};
+$$('[data-quick-jump]').forEach(b => {
+  b.onclick = () => jumpToDate(dateKey(addDays(today, Number(b.dataset.quickJump))));
+});
+
+/* Date Calculator Events */
+$$('#calcTabs button').forEach(b => {
+  b.onclick = () => {
+    $$('#calcTabs button').forEach(x => x.classList.toggle('active', x === b));
+    const isDiff = b.dataset.ctab === 'diff';
+    $('#calcDiffPane').style.display = isDiff ? 'block' : 'none';
+    $('#calcOffsetPane').style.display = isDiff ? 'none' : 'block';
+  };
+});
+$('#calcStart').oninput = $('#calcEnd').oninput = computeCalcDiff;
+$('#calcBase').oninput = $('#calcDir').onchange = $('#calcAmount').oninput = $('#calcUnit').onchange = computeCalcOffset;
+$('#jumpCalcResultBtn').onclick = () => jumpToDate(calcOffsetDateKey);
+
+/* Navigation & Calendar Controls */
+$('#prev').onclick = $('#miniPrev').onclick = () => changeMonth(-1);
+$('#next').onclick = $('#miniNext').onclick = () => changeMonth(1);
+$('#todayBtn').onclick = () => { cursor = new Date(today); selected = new Date(today); render(); };
+
+$$('[data-view]').forEach(b => b.onclick = () => { view = b.dataset.view; render(); });
+$$('[data-page]').forEach(b => b.onclick = () => switchPage(b.dataset.page));
+$$('#rightTabSwitch button').forEach(b => b.onclick = () => { rightTab = b.dataset.rtab; renderRightPanel(); });
+
+$('#addBtn').onclick = $('#mobileFab').onclick = () => activePage === 'tasks' ? openTask() : openEvent();
+$('#inspectorAddBtn').onclick = () => rightTab === 'agenda' ? openEvent() : openTask();
+$('#addTaskPageBtn').onclick = openTask;
+
+$('#eventAllDaySwitch').onclick = () => setAllDayUI(!$('#eventAllDaySwitch').classList.contains('on'));
+$('#modalDeleteBtn').onclick = () => { if (editingId) deleteEvent(editingId); };
+
+$('#eventForm').onsubmit = e => {
+  e.preventDefault();
+  const isAllDay = $('#eventAllDaySwitch').classList.contains('on');
+  const obj = {
+    id: editingId || Date.now(),
+    title: $('#eventName').value.trim(),
+    date: $('#eventDate').value,
+    allDay: isAllDay,
+    start: isAllDay ? '00:00' : $('#eventStart').value,
+    end: isAllDay ? '23:59' : $('#eventEnd').value,
+    repeat: $('#eventRepeat').value,
+    reminder: $('#eventReminder').value,
+    category: $('#eventCategory').value,
+    notes: $('#eventNotes').value.trim()
+  };
+  if (!isAllDay && obj.end <= obj.start) {
+    showToast('Invalid time', 'End time must be after start time', 'danger');
+    return;
+  }
+  if (editingId) events = events.map(x => x.id === editingId ? obj : x);
+  else events.push(obj);
+
+  selected = parseKey(obj.date);
+  cursor = new Date(selected);
+  persist();
+  $('#eventModal').classList.remove('show');
+  render();
+};
+
+function openTask() {
+  $('#taskDate').value = dateKey(selected);
+  $('#taskModal').classList.add('show');
+  setTimeout(() => $('#taskName').focus(), 80);
+}
+
+$('#taskForm').onsubmit = e => {
+  e.preventDefault();
+  tasks.push({ id: Date.now(), title: $('#taskName').value.trim(), date: $('#taskDate').value, priority: $('#taskPriority').value, done: false });
+  persist();
+  $('#taskForm').reset();
+  $('#taskModal').classList.remove('show');
+  render();
+};
+
+$$('#taskFilters button').forEach(b => {
+  b.onclick = () => {
+    taskFilter = b.dataset.filter;
+    $$('#taskFilters button').forEach(x => x.classList.toggle('active', x === b));
+    renderFullTasks();
+  };
+});
+
+$$('#holYearSwitch button').forEach(b => b.onclick = () => { holYear = Number(b.dataset.hyear); renderHolidaysPage(); });
+$$('#holTypeSwitch button').forEach(b => b.onclick = () => { holTypeFilter = b.dataset.htype; renderHolidaysPage(); });
+
+/* Settings Controls (All instant & silent!) */
+$('#openAccountsBtn').onclick = openAccountsModal;
+$('#openTzBtn').onclick = openTzModal;
+$('#openGlobalHolBtn').onclick = openGlobalHolModal;
+$('#openBirthdaysBtn').onclick = () => { renderBirthdaysModal(); $('#birthdaysModal').classList.add('show'); };
+$('#openAboutBtn').onclick = openAboutModal;
+
+$('#setWeekStart').onchange = e => { prefs.weekStart = Number(e.target.value); persist(); render(); };
+$('#toggleExtendedMonth').onclick = () => { prefs.extendedMonth = !prefs.extendedMonth; persist(); render(); };
+$('#toggleWeekNum').onclick = () => { prefs.showWeekNum = !prefs.showWeekNum; persist(); render(); };
+$('#toggleAlmanac').onclick = () => { prefs.showAlmanac = !prefs.showAlmanac; persist(); render(); };
+$('#setOtherCal').onchange = e => { prefs.otherCalendar = e.target.value; persist(); render(); };
+$('#toggleReminders').onclick = () => { prefs.remindersEnabled = !prefs.remindersEnabled; persist(); render(); };
+$('#setDefReminder').onchange = e => { prefs.defaultReminder = e.target.value; persist(); };
+$('#setAllDayTime').onchange = e => { prefs.allDayReminderTime = e.target.value; persist(); renderNotifications(); };
+$('#toggleBirthdays').onclick = () => { prefs.importBirthdays = !prefs.importBirthdays; persist(); render(); };
+$('#toggle24h').onclick = () => { prefs.timeFormat = prefs.timeFormat === '24' ? '12' : '24'; persist(); render(); };
+
+$('#bdayForm').onsubmit = e => {
+  e.preventDefault();
+  birthdays.push({ id: Date.now(), name: $('#bdayName').value.trim(), date: $('#bdayDate').value });
+  persist();
+  $('#bdayForm').reset();
+  renderBirthdaysModal();
+  render();
+};
+
+$('#exportBtn').onclick = () => {
+  const blob = new Blob([JSON.stringify({ events, tasks, birthdays, prefs }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `chronova-backup-${dateKey(today)}.json`;
+  a.click();
+  showToast('Backup exported', `chronova-backup-${dateKey(today)}.json`, 'success');
+};
+
+$('#importBtn').onclick = () => $('#importFile').click();
+$('#importFile').onchange = e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (Array.isArray(data.events)) events = data.events;
+      if (Array.isArray(data.tasks)) tasks = data.tasks;
+      if (Array.isArray(data.birthdays)) birthdays = data.birthdays;
+      if (data.prefs) prefs = { ...prefs, ...data.prefs };
+      persist();
+      applyTheme();
+      render();
+      showToast('Backup restored', 'All calendar data loaded', 'success');
+    } catch {
+      showToast('Import failed', 'Invalid JSON file', 'danger');
+    }
+  };
+  reader.readAsText(file);
+};
+
+/* Search Input */
+$('#searchInput').oninput = e => runSearch(e.target.value);
+
+/* Close Modals & Popovers */
+$$('[data-close]').forEach(btn => btn.onclick = () => $('#' + btn.dataset.close).classList.remove('show'));
+$$('.modal-backdrop').forEach(mb => mb.onclick = e => { if (e.target === mb) mb.classList.remove('show'); });
+
+document.addEventListener('click', e => {
+  const jumpEl = e.target.closest('[data-jump-date]');
+  if (jumpEl) { jumpToDate(jumpEl.dataset.jumpDate); return; }
+  if (!e.target.closest('.popover') && !e.target.closest('#paletteBtn') && !e.target.closest('#notifBtn') && !e.target.closest('#moreMenuBtn')) {
+    $$('.popover').forEach(p => p.classList.remove('show'));
+  }
+});
+
+/* Touch Swipe Month Flip */
+let touchStartX = 0;
+$('#calendarGrid').addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+$('#calendarGrid').addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].screenX - touchStartX;
+  if (Math.abs(dx) > 55) changeMonth(dx < 0 ? 1 : -1);
+}, { passive: true });
+
+/* Keyboard Shortcuts */
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openSearch(); }
+  else if (e.key === 'Escape') closeAllOverlays();
+});
+
+/* Live Clock Ticker & Reminder Checker (every 30s) */
+const firedReminders = new Set();
+setInterval(() => {
+  const now = new Date();
+  let tzNow = '';
+  try { tzNow = new Intl.DateTimeFormat('en-US', { timeZone: prefs.timeZone, hour: '2-digit', minute: '2-digit', hour12: prefs.timeFormat === '12' }).format(now); } catch {}
+  if (tzNow) $('#todayLong').textContent = `${pretty(today)} · ${tzNow}`;
+
+  if (!prefs.remindersEnabled) return;
+  const tKey = dateKey(now);
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  getEventsForDate(tKey).forEach(ev => {
+    if (ev.allDay) return;
+    const [h, m] = (ev.start || '09:00').split(':').map(Number);
+    const remindAt = (h * 60 + m) - Number(ev.reminder || 0);
+    const rKey = `${tKey}-${ev.id}`;
+    if (nowMins === remindAt && !firedReminders.has(rKey)) {
+      firedReminders.add(rKey);
+      showToast(`Reminder: ${ev.title}`, `Starts at ${formatTime(ev.start)}`, 'info');
+    }
+  });
+}, 30000);
+
+/* Init */
+applyTheme();
+render();
+</script>
+</body>
+</html>

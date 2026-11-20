@@ -1,0 +1,7 @@
+{
+  "appId": "com.shavan.chronova",
+  "appName": "Chronova",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": { "androidScheme": "https" }
+}
